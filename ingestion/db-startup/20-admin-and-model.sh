@@ -21,6 +21,7 @@ ADMIN_USER_UPPER="$(echo "${ADMIN_USER}" | tr '[:lower:]' '[:upper:]')"
 ADMIN_PWD_ESCAPED="${ADMIN_PWD//\"/\"\"}"
 MODEL_NAME_UPPER="$(echo "${MODEL_NAME}" | tr '[:lower:]' '[:upper:]')"
 MODEL_PATH="/opt/oracle/dmdump/${MODEL_FILE}"
+APP_USER="$(echo "prism" | tr '[:lower:]' '[:upper:]')"
 
 mkdir -p /opt/oracle/dmdump
 if [[ ! -s "${MODEL_PATH}" ]]; then
@@ -37,6 +38,7 @@ set serveroutput on
 
 alter session set container = FREEPDB1;
 
+-- Create the ADMIN user -----
 declare
   l_user_count number := 0;
 begin
@@ -79,6 +81,48 @@ begin
 end;
 /
 
+--- Create the workshop user ${APP_USER}
+declare
+  l_user_count number := 0;
+begin
+  select count(*)
+    into l_user_count
+    from dba_users
+   where username = '${APP_USER}';
+
+  if l_user_count = 0 then
+    execute immediate 'create user ${APP_USER} identified by "${ADMIN_PWD_ESCAPED}" default tablespace users temporary tablespace temp';
+    dbms_output.put_line('Created user ${APP_USER}.');
+  end if;
+end;
+/
+
+create or replace directory DM_DUMP as '/opt/oracle/dmdump';
+
+ALTER USER ${APP_USER} IDENTIFIED BY "${ADMIN_PWD_ESCAPED}" ACCOUNT UNLOCK;
+GRANT CREATE SESSION TO ${APP_USER};
+GRANT UNLIMITED TABLESPACE TO ${APP_USER};
+GRANT CONNECT, RESOURCE TO ${APP_USER};
+GRANT CREATE SESSION TO ${APP_USER};
+GRANT CREATE TABLE TO ${APP_USER};
+GRANT CREATE VIEW TO ${APP_USER};
+GRANT CREATE SEQUENCE TO ${APP_USER};
+GRANT CREATE PROCEDURE TO ${APP_USER};
+GRANT CREATE TYPE TO ${APP_USER};
+ALTER USER ${APP_USER} QUOTA UNLIMITED ON users;
+
+-- JSON and graph
+GRANT CREATE PROPERTY GRAPH TO ${APP_USER};
+
+-- Vector and AI
+GRANT CREATE MINING MODEL TO ${APP_USER};
+GRANT DB_DEVELOPER_ROLE TO ${APP_USER};
+
+-- PL/SQL packages for vector operations
+GRANT EXECUTE ON DBMS_VECTOR TO ${APP_USER};
+GRANT EXECUTE ON DBMS_VECTOR_CHAIN TO ${APP_USER};
+GRANT READ, WRITE ON DIRECTORY DM_DUMP TO ${APP_USER};
+
 -- Allow outbound HTTP from the admin schema for local model providers such as privateai.
 -- This is a workshop convenience setting; tighten host scope for production deployments.
 declare
@@ -87,25 +131,24 @@ begin
     host => '*',
     ace  => xs\$ace_type(
       privilege_list => xs\$name_list('connect', 'resolve'),
-      principal_name => '${ADMIN_USER_UPPER}',
+      principal_name => '${APP_USER}',
       principal_type => xs_acl.ptype_db
     )
   );
-  dbms_output.put_line('Granted wildcard network ACL to ${ADMIN_USER_UPPER}.');
+  dbms_output.put_line('Granted wildcard network ACL to ${APP_USER}.');
 exception
   when others then
     if sqlcode = -46377 then
-      dbms_output.put_line('Wildcard network ACL already exists for ${ADMIN_USER_UPPER}.');
+      dbms_output.put_line('Wildcard network ACL already exists for ${APP_USER}.');
     else
       raise;
     end if;
 end;
 /
 
-create or replace directory DM_DUMP as '/opt/oracle/dmdump';
-grant read, write on directory DM_DUMP to ${ADMIN_USER_UPPER};
+GRANT READ, WRITE ON DIRECTORY DM_DUMP TO ${APP_USER};
 
-alter session set current_schema = ${ADMIN_USER_UPPER};
+ALTER SESSION SET CURRENT_SCHEMA = ${APP_USER};
 
 declare
   l_model_count number := 0;
