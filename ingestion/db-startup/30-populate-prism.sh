@@ -307,3 +307,7 @@ CREATE OR REPLACE VIEW v_chunks_unified AS
     WHERE dc.source_table = 'inspection_findings';
 
 PROMPT  View V_CHUNKS_UNIFIED created.
+/
+
+exit;
+SQL

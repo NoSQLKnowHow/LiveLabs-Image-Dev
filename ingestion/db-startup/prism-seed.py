@@ -36,13 +36,11 @@ import oracledb
 # ============================================================================
 
 ORACLE_DSN = os.environ.get("DBCONNECTION")
-ORACLE_USER = "prism"
+ORACLE_USER = "PRISM"
 ORACLE_PASSWORD = os.environ.get("DBPASSWORD")
-ORACLE_WALLET_DIR = os.environ.get("ORACLE_WALLET_DIR")
 
-# Data files directory (shared with the sibling adb/ directory, one
-# level up from this script)
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
+# Data files directory
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 MAINTENANCE_LOGS_FILE = os.path.join(DATA_DIR, "maintenance_logs.json")
 INSPECTION_REPORTS_FILE = os.path.join(DATA_DIR, "inspection_reports.json")
 
