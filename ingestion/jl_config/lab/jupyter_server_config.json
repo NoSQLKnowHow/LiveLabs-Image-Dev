@@ -1,0 +1,6 @@
+{
+    "disabledExtensions": {
+        "@jupyterlab/docmanager-extension:download": true,
+        "@jupyterlab/filebrowser-extension:download": true
+    }
+}

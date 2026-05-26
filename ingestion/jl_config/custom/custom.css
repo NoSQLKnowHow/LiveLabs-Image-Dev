@@ -1,0 +1,391 @@
+/*
+ * Oracle Redwood Theme for JupyterLab
+ * Based on Oracle's Redwood Design System
+ */
+
+:root {
+  /* ===== Oracle Redwood Color Palette ===== */
+
+  /* Primary Colors */
+  --oracle-red: #C74634;
+  --oracle-red-hover: #A33B2C;
+  --oracle-red-light: #F4E4E2;
+
+  /* Neutral Colors */
+  --oracle-black: #161513;
+  --oracle-dark-gray: #312D2A;
+  --oracle-medium-gray: #6B6560;
+  --oracle-light-gray: #B8B4AF;
+  --oracle-lighter-gray: #E5E2DE;
+  --oracle-off-white: #F9F8F8;
+  --oracle-white: #FFFFFF;
+
+  /* Accent Colors */
+  --oracle-teal: #00688C;
+  --oracle-teal-light: #E0F0F5;
+  --oracle-green: #1E8E3E;
+  --oracle-green-light: #E6F4EA;
+  --oracle-yellow: #F9AB00;
+  --oracle-yellow-light: #FEF7E0;
+
+  /* ===== JupyterLab Theme Overrides ===== */
+
+  /* Brand Colors */
+  --jp-brand-color0: var(--oracle-red);
+  --jp-brand-color1: var(--oracle-red);
+  --jp-brand-color2: var(--oracle-red-light);
+  --jp-brand-color3: var(--oracle-red-light);
+  --jp-brand-color4: var(--oracle-red-light);
+
+  /* Accent Colors */
+  --jp-accent-color0: var(--oracle-teal);
+  --jp-accent-color1: var(--oracle-teal);
+  --jp-accent-color2: var(--oracle-teal-light);
+  --jp-accent-color3: var(--oracle-teal-light);
+
+  /* UI Font */
+  --jp-ui-font-family: -apple-system, BlinkMacSystemFont, "Oracle Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --jp-content-font-family: -apple-system, BlinkMacSystemFont, "Oracle Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --jp-code-font-family: "JetBrains Mono", "SF Mono", Monaco, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Layout Colors */
+  --jp-layout-color0: var(--oracle-white);
+  --jp-layout-color1: var(--oracle-off-white);
+  --jp-layout-color2: var(--oracle-lighter-gray);
+  --jp-layout-color3: var(--oracle-light-gray);
+  --jp-layout-color4: var(--oracle-medium-gray);
+
+  /* Inverse Layout (for dark elements) */
+  --jp-inverse-layout-color0: var(--oracle-black);
+  --jp-inverse-layout-color1: var(--oracle-dark-gray);
+  --jp-inverse-layout-color2: var(--oracle-medium-gray);
+  --jp-inverse-layout-color3: var(--oracle-light-gray);
+  --jp-inverse-layout-color4: var(--oracle-lighter-gray);
+
+  /* Border Colors */
+  --jp-border-color0: var(--oracle-light-gray);
+  --jp-border-color1: var(--oracle-lighter-gray);
+  --jp-border-color2: var(--oracle-off-white);
+  --jp-border-color3: var(--oracle-off-white);
+
+  /* UI Font Colors */
+  --jp-ui-font-color0: var(--oracle-dark-gray);
+  --jp-ui-font-color1: var(--oracle-medium-gray);
+  --jp-ui-font-color2: var(--oracle-light-gray);
+  --jp-ui-font-color3: var(--oracle-lighter-gray);
+
+  /* Content Font Colors */
+  --jp-content-font-color0: var(--oracle-black);
+  --jp-content-font-color1: var(--oracle-dark-gray);
+  --jp-content-font-color2: var(--oracle-medium-gray);
+  --jp-content-font-color3: var(--oracle-light-gray);
+
+  /* Editor Colors */
+  --jp-editor-selected-background: var(--oracle-red-light);
+  --jp-editor-selected-focused-background: var(--oracle-teal-light);
+  --jp-editor-cursor-color: var(--oracle-red);
+
+  /* Cell Colors */
+  --jp-cell-editor-background: var(--oracle-white);
+  --jp-cell-editor-border-color: var(--oracle-lighter-gray);
+  --jp-cell-editor-active-background: var(--oracle-white);
+  --jp-cell-editor-active-border-color: var(--oracle-teal);
+  --jp-cell-prompt-font-color: var(--oracle-medium-gray);
+  --jp-cell-inprompt-font-color: var(--oracle-teal);
+  --jp-cell-outprompt-font-color: var(--oracle-red);
+
+  /* Notebook Colors */
+  --jp-notebook-multiselected-color: var(--oracle-teal-light);
+
+  /* Sidebar Colors */
+  --jp-sidebar-min-width: 200px;
+
+  /* Scrollbar */
+  --jp-scrollbar-thumb-color: var(--oracle-light-gray);
+  --jp-scrollbar-background-color: var(--oracle-off-white);
+
+  /* Input Colors */
+  --jp-input-box-shadow: inset 0 0 0 1px var(--oracle-teal);
+  --jp-input-active-background: var(--oracle-white);
+  --jp-input-hover-background: var(--oracle-off-white);
+  --jp-input-active-box-shadow-color: var(--oracle-teal);
+
+  /* Success/Warning/Error Colors */
+  --jp-success-color0: var(--oracle-green);
+  --jp-success-color1: var(--oracle-green-light);
+  --jp-warn-color0: var(--oracle-yellow);
+  --jp-warn-color1: var(--oracle-yellow-light);
+  --jp-error-color0: var(--oracle-red);
+  --jp-error-color1: var(--oracle-red-light);
+
+  /* Icon Colors */
+  --jp-icon-contrast-color0: var(--oracle-red);
+  --jp-icon-contrast-color1: var(--oracle-teal);
+  --jp-icon-contrast-color2: var(--oracle-green);
+  --jp-icon-contrast-color3: var(--oracle-yellow);
+}
+
+/* ===== Component Styling ===== */
+
+/* Move app branding from left logo slot to right side of top menu bar */
+#jp-MainLogo {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Top Menu Bar */
+#jp-top-panel {
+  background: var(--oracle-white) !important;
+  border-bottom: 1px solid var(--oracle-lighter-gray) !important;
+  position: relative !important;
+  padding-right: 220px !important;
+}
+
+#jp-top-panel::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 198px;
+  height: 18px;
+  background: url("/custom/oracle-logo.svg") no-repeat right center;
+  background-size: contain;
+  pointer-events: none;
+}
+
+#jp-menu-panel {
+  background: var(--oracle-white) !important;
+}
+
+/* Main toolbar */
+.jp-Toolbar {
+  background: var(--oracle-off-white) !important;
+  border-bottom: 1px solid var(--oracle-lighter-gray) !important;
+}
+
+/* Sidebar styling */
+.jp-SideBar {
+  background: var(--oracle-off-white) !important;
+}
+
+.jp-SideBar .lm-TabBar-tab {
+  color: var(--oracle-medium-gray) !important;
+}
+
+.jp-SideBar .lm-TabBar-tab.lm-mod-current {
+  color: var(--oracle-red) !important;
+  border-left: 3px solid var(--oracle-red) !important;
+}
+
+/* File browser */
+.jp-DirListing-item.jp-mod-selected {
+  background: var(--oracle-teal-light) !important;
+  color: var(--oracle-dark-gray) !important;
+}
+
+.jp-DirListing-item:hover {
+  background: var(--oracle-off-white) !important;
+}
+
+/* Tab bar styling */
+.lm-TabBar-tab {
+  background: var(--oracle-off-white) !important;
+  border: 1px solid var(--oracle-lighter-gray) !important;
+  border-bottom: none !important;
+}
+
+.lm-TabBar-tab.lm-mod-current {
+  background: var(--oracle-white) !important;
+  border-top: 2px solid var(--oracle-red) !important;
+}
+
+/* Buttons */
+.jp-mod-styled.jp-mod-accept {
+  background: var(--oracle-red) !important;
+  color: var(--oracle-white) !important;
+  border: none !important;
+}
+
+.jp-mod-styled.jp-mod-accept:hover {
+  background: var(--oracle-red-hover) !important;
+}
+
+.jp-mod-styled.jp-mod-reject {
+  background: var(--oracle-white) !important;
+  color: var(--oracle-dark-gray) !important;
+  border: 1px solid var(--oracle-light-gray) !important;
+}
+
+.jp-mod-styled.jp-mod-reject:hover {
+  background: var(--oracle-off-white) !important;
+}
+
+/* Launcher styling */
+.jp-Launcher-body {
+  background: var(--oracle-white) !important;
+}
+
+.jp-Launcher-cardContainer {
+  padding: 16px !important;
+}
+
+.jp-LauncherCard {
+  background: var(--oracle-white) !important;
+  border: 1px solid var(--oracle-lighter-gray) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.2s ease !important;
+}
+
+.jp-LauncherCard:hover {
+  border-color: var(--oracle-red) !important;
+  box-shadow: 0 4px 12px rgba(199, 70, 52, 0.15) !important;
+  transform: translateY(-2px) !important;
+}
+
+.jp-Launcher-sectionHeader {
+  color: var(--oracle-dark-gray) !important;
+  font-weight: 600 !important;
+  border-bottom: 2px solid var(--oracle-red) !important;
+  padding-bottom: 8px !important;
+}
+
+/* Notebook cells */
+.jp-Cell {
+  background: var(--oracle-white) !important;
+}
+
+.jp-Cell.jp-mod-active .jp-InputArea-prompt {
+  color: var(--oracle-teal) !important;
+}
+
+.jp-Cell.jp-mod-selected {
+  background: var(--oracle-off-white) !important;
+}
+
+.jp-InputArea-editor {
+  border: 1px solid var(--oracle-lighter-gray) !important;
+  border-radius: 4px !important;
+}
+
+.jp-Cell.jp-mod-active .jp-InputArea-editor {
+  border-color: var(--oracle-teal) !important;
+  box-shadow: 0 0 0 1px var(--oracle-teal) !important;
+}
+
+/* Code highlighting adjustments */
+.cm-s-jupyter .cm-keyword {
+  color: var(--oracle-red) !important;
+}
+
+.cm-s-jupyter .cm-string {
+  color: var(--oracle-green) !important;
+}
+
+.cm-s-jupyter .cm-builtin {
+  color: var(--oracle-teal) !important;
+}
+
+.cm-s-jupyter .cm-number {
+  color: #0550AE !important;
+}
+
+.cm-s-jupyter .cm-comment {
+  color: var(--oracle-medium-gray) !important;
+  font-style: italic !important;
+}
+
+/* Terminal styling */
+.jp-Terminal {
+  background: var(--oracle-dark-gray) !important;
+}
+
+/* Dialog styling */
+.jp-Dialog-content {
+  border-radius: 8px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+}
+
+.jp-Dialog-header {
+  background: var(--oracle-off-white) !important;
+  border-bottom: 1px solid var(--oracle-lighter-gray) !important;
+  padding: 16px 20px !important;
+}
+
+/* Running panel */
+.jp-RunningSessions {
+  background: var(--oracle-white) !important;
+}
+
+/* Search styling */
+.jp-DocumentSearch-overlay {
+  background: var(--oracle-white) !important;
+  border: 1px solid var(--oracle-lighter-gray) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Status bar */
+#jp-bottom-panel {
+  background: var(--oracle-off-white) !important;
+  border-top: 1px solid var(--oracle-lighter-gray) !important;
+}
+
+/* Kernel status */
+.jp-Toolbar-kernelStatus {
+  color: var(--oracle-medium-gray) !important;
+}
+
+/* Links */
+a {
+  color: var(--oracle-teal) !important;
+}
+
+a:hover {
+  color: var(--oracle-red) !important;
+}
+
+/* Focus outline */
+*:focus {
+  outline-color: var(--oracle-teal) !important;
+}
+
+/* Selection */
+::selection {
+  background: var(--oracle-teal-light) !important;
+  color: var(--oracle-dark-gray) !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--oracle-off-white);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--oracle-light-gray);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--oracle-medium-gray);
+}
+
+/* Oracle branding touch - subtle top border */
+#jp-top-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--oracle-red) 0%, var(--oracle-red) 100%);
+}

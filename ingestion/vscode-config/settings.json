@@ -1,0 +1,8 @@
+{
+    "workbench.colorTheme": "Visual Studio Light",
+    "workbench.startupEditor": "none",
+    "redhat.telemetry.enabled": false,
+    "files.exclude": {
+        "**/.*": true
+    }
+}

@@ -1,0 +1,87 @@
+FROM container-registry.oracle.com/os/oraclelinux:9
+
+# Set environment variables
+ENV JUPYTER_CONFIG_DIR=/etc/jupyter \
+    HOME=/home/ \
+    PATH="/opt/sqlcl/bin:$PATH" \
+    CODE_VERSION=4.108.2
+
+RUN mkdir -p /etc/dnf/vars && \
+    OCI_REGION="$(curl -fsS --max-time 5 -H "Authorization: Bearer Oracle" http://169.254.169.254/opc/v2/instance/region || true)" && \
+    if [ -z "$OCI_REGION" ] || echo "$OCI_REGION" | grep -qi '<html>'; then OCI_REGION="eu-amsterdam-1"; fi && \
+    printf '.%s\n' "$OCI_REGION" > /etc/dnf/vars/ociregion && \
+    printf 'oci.oraclecloud.com\n' > /etc/dnf/vars/ocidomain && \
+    printf '%s\n' \
+      '[ol9_oci_included]' \
+      'name=Oracle Linux $releasever OCI Included Packages ($basearch)' \
+      'baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL9/oci/included/$basearch/' \
+      'gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle' \
+      'gpgcheck=1' \
+      'enabled=1' \
+      > /etc/yum.repos.d/oci-included-ol9.repo
+
+# Install system dependencies
+RUN dnf update -y && \
+    dnf module enable nodejs:20 -y && \
+    dnf -y install oracle-epel-release-el9 git nodejs wget curl python3.11 python3.11-requests python3.11-pip python3.11-setuptools python3.11-wheel \
+    libffi-devel openssl openssl-devel tk-devel sudo xz-devel zlib-devel bzip2-devel readline-devel libuuid-devel ncurses-devel \
+    libaio oracle-database-preinstall-23ai jdk-26-headless jq bzip2 && \
+    dnf clean all && \
+    alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 && \
+    alternatives --set python3 /usr/bin/python3.11 && \
+    ln -sf /usr/bin/python3.11 /usr/bin/python && \
+    ln -sf /usr/bin/pip3.11 /usr/bin/pip
+
+
+# Install SQLcl
+# Upgrade pip
+RUN pip3.11 install --upgrade pip
+
+# Install JupyterLab and Python dependencies using the correct Python version
+COPY ./requirements.txt /tmp/requirements.txt
+RUN pip3.11 install --no-cache-dir -r /tmp/requirements.txt
+
+# Parked
+# pydantic starlette torch torchvision tensorflow transformers scipy statsmodels polars seaborn plotly spacy fastapi mlflow scikit-learn joblib 
+
+RUN mkdir -p /opt/sqlcl && \
+    curl -L -o /tmp/sqlcl-latest.zip https://download.oracle.com/otn_software/java/sqldeveloper/sqlcl-latest.zip && \
+    unzip /tmp/sqlcl-latest.zip -d /opt/ && \
+    rm -f /tmp/sqlcl-latest.zip
+
+RUN chmod -R 755 /opt/sqlcl/lib
+
+# Install code-server (VS Code web)
+RUN curl -fOL https://github.com/coder/code-server/releases/download/v${CODE_VERSION}/code-server-${CODE_VERSION}-linux-amd64.tar.gz && \
+    tar -xzf code-server-${CODE_VERSION}-linux-amd64.tar.gz && \
+    mv code-server-${CODE_VERSION}-linux-amd64 /opt/code-server && \
+    ln -s /opt/code-server/bin/code-server /usr/local/bin/code-server && \
+    rm -f code-server-${CODE_VERSION}-linux-amd64.tar.gz
+
+# Install VS Code extensions
+RUN code-server --install-extension ms-python.python && \
+    code-server --install-extension ms-toolsai.jupyter && \
+    code-server --install-extension redhat.java
+
+# Copy VS Code settings
+COPY ./vscode-config/settings.json /home/.local/share/code-server/User/settings.json
+
+# Copy Oracle Redwood custom theme and lab defaults
+RUN mkdir -p /etc/jupyter/custom /etc/jupyter/labconfig
+COPY ./jl_config/jupyter_lab_config.py /etc/jupyter/jupyter_lab_config.py
+COPY ./jl_config/custom/ /etc/jupyter/custom/
+COPY ./jl_config/labconfig/default_setting_overrides.json /etc/jupyter/labconfig/default_setting_overrides.json
+COPY ./jl_config/labconfig/page_config.json /etc/jupyter/labconfig/page_config.json
+
+# Switch to the new user
+#USER $NB_USER
+WORKDIR /home/
+
+# Expose port 8888 for JupyterLab
+EXPOSE 8888
+EXPOSE 8501
+EXPOSE 8087
+EXPOSE 8088
+
+# Run JupyterLab with explicit config (password auth from /home/.vncpwd.env)
+CMD ["jupyter", "lab", "--config=/etc/jupyter/jupyter_lab_config.py", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--custom-css"]

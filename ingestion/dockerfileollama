@@ -1,0 +1,11 @@
+#FROM ollama/ollama
+
+FROM docker.io/ollama/ollama:latest
+
+COPY ./model/pull_ollama.sh /pull_ollama.sh
+
+# Ensure the script is executable
+RUN chmod +x /pull_ollama.sh
+
+EXPOSE 11434
+ENTRYPOINT ["/bin/bash", "/pull_ollama.sh"]

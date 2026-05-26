@@ -1,0 +1,46 @@
+# --- Oracle Database driver (shared by everything) -------------------------
+oracledb==4.0.1
+cffi==2.0.0
+cryptography==48.0.0
+pycparser==3.0
+oracleagentmemory==26.4.0
+
+# --- Jupyter Notebook --------------------
+jupyterlab==4.5.7
+jupyterlab-lsp==5.3.0
+jupyterlab-unfold==0.3.4
+python-lsp-server[all]==1.14.0
+jupyter-server-proxy==4.5.0
+jupyter-vscode-proxy==0.7
+
+# --- Environment + config (data-loader pipeline) ---------------------------
+dotenv==0.9.9
+python-dotenv==1.2.2
+typing_extensions==4.15.0
+
+# --- LangChain core + integrations (notebook only) -------------------------
+# These are the highest-churn pins in this file. Test the notebook end-to-end
+# after bumping any of them.
+langchain==1.0.7
+langchain-core==1.4.0
+langchain-community==0.4.2
+langchain-ollama==1.1.0
+
+# --- LangGraph + Oracle persistence (notebook only) ------------------------
+langgraph==1.2.1
+langgraph-oracledb==1.0.1
+
+# --- LLM client utility (notebook only) ------------------------------------
+pydantic==2.13.4
+
+# --- HTTP client (notebook section 0.8 Ollama smoke test) ------------------
+requests==2.34.2
+
+# --- Notebook UI + data viz (notebooks only) -------------------------------
+ipython==9.13.0
+matplotlib==3.10.9
+networkx==3.6.1
+pandas==3.0.3
+
+# --- MongoDB driver ------------
+pymongo==4.17.0

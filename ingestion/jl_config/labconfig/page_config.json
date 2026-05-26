@@ -1,0 +1,9 @@
+{
+  "lockedExtensions": {},
+  "disabledExtensions": {
+    "@jupyterlab/theme-dark-extension": true,
+    "@jupyterlab/theme-dark-high-contrast-extension": true,
+    "jupyterlab-theme-toggler": true
+  },
+  "customCssUrl": "/custom/custom.css"
+}
