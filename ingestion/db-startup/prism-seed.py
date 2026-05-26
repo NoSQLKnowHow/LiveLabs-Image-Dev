@@ -26,17 +26,17 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-from dotenv import load_dotenv
-load_dotenv()
-
 import oracledb
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ============================================================================
 # Configuration
 # ============================================================================
 
 ORACLE_DSN = os.environ.get("DBCONNECTION")
-ORACLE_USER = "PRISM"
+ORACLE_USER = os.environ.get("DBUSER")
 ORACLE_PASSWORD = os.environ.get("DBPASSWORD")
 
 # Data files directory
