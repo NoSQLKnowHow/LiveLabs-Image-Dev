@@ -38,6 +38,7 @@ load_dotenv()
 ORACLE_DSN = os.environ.get("DBCONNECTION")
 ORACLE_USER = os.environ.get("DBUSER")
 ORACLE_PASSWORD = os.environ.get("DBPASSWORD")
+ORACLE_WALLET_DIR = os.environ.get("ORACLE_WALLET_DIR")
 
 # Data files directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
