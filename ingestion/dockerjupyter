@@ -7,8 +7,7 @@ ENV JUPYTER_CONFIG_DIR=/etc/jupyter \
     CODE_VERSION=4.108.2
 
 RUN mkdir -p /etc/dnf/vars && \
-    OCI_REGION="$(curl -fsS --max-time 5 -H "Authorization: Bearer Oracle" http://169.254.169.254/opc/v2/instance/region || true)" && \
-    if [ -z "$OCI_REGION" ] || echo "$OCI_REGION" | grep -qi '<html>'; then OCI_REGION="eu-amsterdam-1"; fi && \
+    OCI_REGION="$(curl -fsS --max-time 5 -H "Authorization: Bearer Oracle" http://169.254.169.254/opc/v2/instance/canonicalRegionName || true)" && \
     printf '.%s\n' "$OCI_REGION" > /etc/dnf/vars/ociregion && \
     printf 'oci.oraclecloud.com\n' > /etc/dnf/vars/ocidomain && \
     printf '%s\n' \
