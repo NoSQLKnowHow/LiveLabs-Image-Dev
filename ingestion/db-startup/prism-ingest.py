@@ -42,6 +42,7 @@ oracledb.defaults.fetch_lobs = False
 ORACLE_DSN = os.environ.get("DBCONNECTION", "aidbfree:1521/freepdb1")
 ORACLE_USER = os.environ.get("DBUSER", "prism")
 ORACLE_PASSWORD = os.environ.get("DBPASSWORD", "WelcometoOracle26ai")
+ORACLE_WALLET_DIR = os.environ.get("ORACLE_WALLET_DIR")
 
 # Chunking configuration
 # These can be tuned based on the content characteristics.
