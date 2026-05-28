@@ -35,10 +35,11 @@ load_dotenv()
 # Configuration
 # ============================================================================
 
-ORACLE_DSN = os.environ.get("DBCONNECTION")
-ORACLE_USER = os.environ.get("DBUSER")
-ORACLE_PASSWORD = os.environ.get("DBPASSWORD")
+ORACLE_DSN = os.environ.get("DBCONNECTION", "licalhost:1521/freepdb1")
+ORACLE_USER = os.environ.get("DBUSER", "prism")
+ORACLE_PASSWORD = os.environ.get("DBPASSWORD", "Welcome202626ai")
 ORACLE_WALLET_DIR = os.environ.get("ORACLE_WALLET_DIR")
+EMBEDDING_MODEL = os.environ.get("MODEL_NAME", "ALL_MINILM_L12_V2")
 
 # Data files directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")

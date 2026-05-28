@@ -5,7 +5,7 @@ PRISM: Vector Ingestion Pipeline
 Reads maintenance log narratives, inspection report summaries, and
 inspection finding descriptions, chunks them using
 DBMS_VECTOR_CHAIN.UTL_TO_CHUNKS, generates embeddings using the ONNX
-DEMO_MODEL, and stores the results in the DOCUMENT_CHUNKS table.
+ALL_MINILM_L12_V2, and stores the results in the DOCUMENT_CHUNKS table.
 
 Usage:
     python prism-ingest.py
@@ -15,7 +15,7 @@ Run before: prism-indexes.sql
 
 Requires:
     - python-oracledb
-    - DEMO_MODEL loaded in the database (see load-prism-database-free.md)
+    - ALL_MINILM_L12_V2 loaded in the database (see load-prism-database-free.md)
     - Environment variables (see .env)
 ============================================================================
 """
@@ -39,9 +39,9 @@ oracledb.defaults.fetch_lobs = False
 # Configuration
 # ============================================================================
 
-ORACLE_DSN = os.environ.get("DBCONNECTION", "aidbfree:1521/freepdb1")
+ORACLE_DSN = os.environ.get("DBCONNECTION", "localhost:1521/freepdb1")
 ORACLE_USER = os.environ.get("DBUSER", "prism")
-ORACLE_PASSWORD = os.environ.get("DBPASSWORD", "WelcometoOracle26ai")
+ORACLE_PASSWORD = os.environ.get("DBPASSWORD", "Welcome202626ai")
 ORACLE_WALLET_DIR = os.environ.get("ORACLE_WALLET_DIR")
 
 # Chunking configuration
@@ -51,7 +51,7 @@ CHUNK_OVERLAP = 100         # overlap between chunks in characters
 CHUNK_SPLIT_BY = "sentence" # split strategy: sentence, word, character
 
 # Embedding model name (must match what was loaded in load-prism-database-free.md)
-EMBEDDING_MODEL = "DEMO_MODEL"
+EMBEDDING_MODEL = os.environ.get("MODEL_NAME", "ALL_MINILM_L12_V2")
 
 # Batch size for database operations
 BATCH_SIZE = 50
@@ -99,7 +99,7 @@ CHUNK_PARAMS = json.dumps({
 def chunk_and_embed(cursor, source_table, source_id, text):
     """
     Chunk a piece of text using DBMS_VECTOR_CHAIN.UTL_TO_CHUNKS, embed
-    each chunk using DEMO_MODEL, and insert the results into DOCUMENT_CHUNKS.
+    each chunk using ALL_MINILM_L12_V2, and insert the results into DOCUMENT_CHUNKS.
 
     Uses UTL_TO_CHUNKS (PL/SQL package) instead of VECTOR_CHUNKS (SQL function)
     because UTL_TO_CHUNKS accepts JSON parameters via bind variables and works
@@ -311,7 +311,7 @@ def main():
     cursor = conn.cursor()
     print("  Connected.")
 
-    # Verify DEMO_MODEL is loaded
+    # Verify ALL_MINILM_L12_V2 is loaded
     print("\nVerifying embedding model...")
     cursor.execute("""
         SELECT owner, model_name FROM all_mining_models WHERE model_name = :model_name;

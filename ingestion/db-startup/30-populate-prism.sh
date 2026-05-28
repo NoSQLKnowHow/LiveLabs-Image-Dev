@@ -4,8 +4,11 @@ set -euo pipefail
 
 APP_PWD="${APP_DB_ADMIN_PWD:-${ORACLE_PWD:-}}"
 APP_USER="$(echo "prism" | tr '[:lower:]' '[:upper:]')"
+export DBPASSWORD="${APP_DB_ADMIN_PWD:-${ORACLE_PWD:-Welcome202626ai}}"
+export DBUSER="$(echo "prism" | tr '[:lower:]' '[:upper:]')"
+export DBCONNECTION="localhost:1521/freepdb1"
 
-sqlplus -s / as sysdba <<SQL
+sqlplus ${DBUSER}/${DBPASSWORD}@${DBCONNECTION} <<SQL
 whenever sqlerror exit sql.sqlcode;
 SET DEFINE OFF
 SET SERVEROUTPUT ON
