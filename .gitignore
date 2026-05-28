@@ -2,3 +2,4 @@
 .env
 llmaster.zip
 build_dev.zip
+.DS_Store
