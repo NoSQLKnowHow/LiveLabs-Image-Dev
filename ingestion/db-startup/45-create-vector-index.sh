@@ -5,6 +5,22 @@ export DBPASSWORD="${APP_DB_ADMIN_PWD:-${ORACLE_PWD:-}}"
 export DBUSER="$(echo "prism" | tr '[:lower:]' '[:upper:]')"
 export DBCONNECTION="aidbfree:1521/freepdb1"
 
+# Set the vector memory size to 1GB so we can create a vector index.
+sqlplus -s / as sysdba <<'EOF'
+
+ALTER SESSION SET CONTAINER = CDB$ROOT;
+
+ALTER SYSTEM SET vector_memory_size = 1G SCOPE = SPFILE;
+
+SHUTDOWN IMMEDIATE;
+STARTUP;
+
+SHOW PARAMETER vector_memory_size;
+/
+
+exit;
+EOF
+
 # Create vector index on new vector embeddings in DOCUMENTS_CHUNKS table.
 sqlplus ${DBUSER}/${DBPASSWORD}@${DBCONNECTION} <<SQL
 whenever sqlerror exit sql.sqlcode;
