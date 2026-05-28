@@ -5,13 +5,6 @@ export DBPASSWORD="${APP_DB_ADMIN_PWD:-${ORACLE_PWD:-}}"
 export DBUSER="$(echo "prism" | tr '[:lower:]' '[:upper:]')"
 export DBCONNECTION="aidbfree:1521/freepdb1"
 
-# Seed PRISM schema with data
-python3 /opt/oracle/scripts/startup/prism-seed.py
-
-# Create vector embeddings and insert into DOCUMENTS_CHUNKS table.
-python3 /opt/oracle/scripts/startup/prism-ingest.py
-
-
 # Create vector index on new vector embeddings in DOCUMENTS_CHUNKS table.
 sqlplus ${DBUSER}/${DBPASSWORD}@${DBCONNECTION} <<SQL
 whenever sqlerror exit sql.sqlcode;
