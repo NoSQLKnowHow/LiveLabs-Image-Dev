@@ -64,24 +64,24 @@ services:
       - "./db-startup:/opt/oracle/scripts/startup:Z"
       - "./dmdump:/opt/oracle/dmdump:Z,U"
     restart: always
-  ords:
-    image: container-registry.oracle.com/database/ords:latest
-    container_name: ords
-    hostname: ords
-    environment:
-      - DBSERVICENAME=FREEPDB1
-      - DBHOST=aidbfree
-      - DBPORT=1521
-      - ORACLE_PWD=${ORACLE_PWD}
-      - APP_DB_ADMIN_USER=${APP_DB_ADMIN_USER:-ADMIN}
-      - APP_DB_ADMIN_BASE_PATH=${APP_DB_ADMIN_BASE_PATH:-admin}
-    volumes:
-      - "./ords-config:/etc/ords/config:Z,U"
-      - "./ords-bootstrap:/ords-entrypoint.d:Z"
-    ports:
-      - "8181:8080"
-      - "27017:27017"
-    depends_on:
-      aidbfree:
-        condition: service_healthy
-    restart: always
+  # ords:
+  #   image: container-registry.oracle.com/database/ords:latest
+  #   container_name: ords
+  #   hostname: ords
+  #   environment:
+  #     - DBSERVICENAME=FREEPDB1
+  #     - DBHOST=aidbfree
+  #     - DBPORT=1521
+  #     - ORACLE_PWD=${ORACLE_PWD}
+  #     - APP_DB_ADMIN_USER=${APP_DB_ADMIN_USER:-ADMIN}
+  #     - APP_DB_ADMIN_BASE_PATH=${APP_DB_ADMIN_BASE_PATH:-admin}
+  #   volumes:
+  #     - "./ords-config:/etc/ords/config:Z,U"
+  #     - "./ords-bootstrap:/ords-entrypoint.d:Z"
+  #   ports:
+  #     - "8181:8080"
+  #     - "27017:27017"
+  #   depends_on:
+  #     aidbfree:
+  #       condition: service_healthy
+  #   restart: always
