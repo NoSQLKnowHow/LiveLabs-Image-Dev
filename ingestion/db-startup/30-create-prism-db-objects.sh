@@ -37,9 +37,11 @@ CREATE TABLE infrastructure_assets (
     name              VARCHAR2(200) NOT NULL,
     asset_type        VARCHAR2(100) NOT NULL,
     status            VARCHAR2(50)  DEFAULT 'active',
+    criticality       NUMBER(1) DEFAULT 3 NOT NULL,
     commissioned_date DATE,
     description       VARCHAR2(4000),
-    specifications    JSON
+    specifications    JSON,
+    CONSTRAINT chk_assets_criticality CHECK (criticality BETWEEN 1 AND 5)
 );
 
 PROMPT         Table INFRASTRUCTURE_ASSETS created.
@@ -126,6 +128,7 @@ PROMPT [7/12] Creating standard indexes...
 CREATE INDEX idx_assets_district ON infrastructure_assets(district_id);
 CREATE INDEX idx_assets_type ON infrastructure_assets(asset_type);
 CREATE INDEX idx_assets_status ON infrastructure_assets(status);
+CREATE INDEX idx_assets_criticality ON infrastructure_assets(criticality);
 
 PROMPT         Indexes on INFRASTRUCTURE_ASSETS created.
 
@@ -198,7 +201,7 @@ CREATE PROPERTY GRAPH citypulse_graph
         infrastructure_assets
             KEY (asset_id)
             LABEL asset
-            PROPERTIES (name, asset_type, status, district_id)
+            PROPERTIES (name, asset_type, status, criticality, district_id)
     )
     EDGE TABLES (
         asset_connections
