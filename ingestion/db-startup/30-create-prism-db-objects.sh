@@ -217,23 +217,56 @@ PROMPT         Property graph CITYPULSE_GRAPH created.
 -- ----------------------------------------------------------------------------
 -- 11. Create vector chunk views
 -- ----------------------------------------------------------------------------
--- These views pre-join DOCUMENT_CHUNKS with their source tables, making
--- vector search queries simpler in the API layer. Individual views are
--- provided for source-specific queries, and a unified view spans all
--- content types for cross-source vector search.
--- Note: These views are created now (with the schema) but will return
--- no rows until prism-seed.py and prism-ingest.py have been run.
+-- These views make the learner/API query surface simpler. V_ASSET_SPECS_SUMMARY
+-- exposes common JSON specification fields as relational columns, and the chunk
+-- views pre-join DOCUMENT_CHUNKS with their source tables.
+-- Note: Chunk views are created now but return no rows until the SQL seed loader
+-- and vector ingestion pipeline have run.
 -- ----------------------------------------------------------------------------
 
 PROMPT
-PROMPT [11/12] Creating vector chunk views...
+PROMPT [11/12] Creating helper views...
+
+CREATE OR REPLACE VIEW v_asset_specs_summary AS
+    SELECT a.asset_id,
+           a.name AS asset_name,
+           a.asset_type,
+           a.status,
+           a.criticality,
+           d.name AS district_name,
+           a.specifications.spanLength_m.number()       AS span_length_m,
+           a.specifications.loadCapacity_t.number()     AS load_capacity_t,
+           a.specifications.voltageRating_kv.number()   AS voltage_rating_kv,
+           a.specifications.transformerCount.number()   AS transformer_count,
+           a.specifications.peakCapacity_mw.number()    AS peak_capacity_mw,
+           a.specifications.diameter_mm.number()        AS diameter_mm,
+           a.specifications.pressureRating_kpa.number() AS pressure_rating_kpa,
+           a.specifications.length_km.number()          AS length_km,
+           a.specifications.height_m.number()           AS height_m,
+           a.specifications.backupPowerHours.number()   AS backup_power_hours,
+           a.specifications.operatingSeats.number()     AS operating_seats,
+           a.specifications.incidentRooms.number()      AS incident_rooms,
+           a.specifications.dispatchConsoles.number()   AS dispatch_consoles,
+           a.specifications.material.string()           AS material,
+           a.specifications.coolingType.string()        AS cooling_type,
+           a.specifications.backhaul.string()           AS backhaul,
+           a.specifications.backupPower.string()        AS backup_power,
+           a.specifications.activationTrigger.string()  AS activation_trigger,
+           a.specifications
+    FROM infrastructure_assets a
+    JOIN districts d ON a.district_id = d.district_id;
+
+PROMPT         View V_ASSET_SPECS_SUMMARY created.
+
+PROMPT
+PROMPT         Creating vector chunk views...
 
 -- Individual source view: maintenance log chunks
 CREATE OR REPLACE VIEW v_chunks_maintenance_logs AS
     SELECT dc.chunk_id, dc.source_id, dc.chunk_seq,
            dc.chunk_text, dc.embedding,
            ml.asset_id, ml.severity, ml.log_date,
-           a.name AS asset_name, a.asset_type,
+           a.name AS asset_name, a.asset_type, a.criticality,
            d.district_id, d.name AS district_name
     FROM document_chunks dc
     JOIN maintenance_logs ml ON dc.source_id = ml.log_id
@@ -248,7 +281,7 @@ CREATE OR REPLACE VIEW v_chunks_inspection_reports AS
     SELECT dc.chunk_id, dc.source_id, dc.chunk_seq,
            dc.chunk_text, dc.embedding,
            ir.asset_id, ir.overall_grade, ir.inspect_date, ir.inspector,
-           a.name AS asset_name, a.asset_type,
+           a.name AS asset_name, a.asset_type, a.criticality,
            d.district_id, d.name AS district_name
     FROM document_chunks dc
     JOIN inspection_reports ir ON dc.source_id = ir.report_id
@@ -264,7 +297,7 @@ CREATE OR REPLACE VIEW v_chunks_inspection_findings AS
            dc.chunk_text, dc.embedding,
            inf.report_id, inf.category, inf.severity,
            ir.asset_id, ir.inspect_date,
-           a.name AS asset_name, a.asset_type,
+           a.name AS asset_name, a.asset_type, a.criticality,
            d.district_id, d.name AS district_name
     FROM document_chunks dc
     JOIN inspection_findings inf ON dc.source_id = inf.finding_id
@@ -281,7 +314,7 @@ CREATE OR REPLACE VIEW v_chunks_unified AS
     SELECT dc.chunk_id, dc.source_table, dc.source_id, dc.chunk_seq,
            dc.chunk_text, dc.embedding,
            ml.severity, ml.log_date AS source_date,
-           a.asset_id, a.name AS asset_name, a.asset_type,
+           a.asset_id, a.name AS asset_name, a.asset_type, a.criticality,
            d.district_id, d.name AS district_name
     FROM document_chunks dc
     JOIN maintenance_logs ml ON dc.source_id = ml.log_id
@@ -292,7 +325,7 @@ CREATE OR REPLACE VIEW v_chunks_unified AS
     SELECT dc.chunk_id, dc.source_table, dc.source_id, dc.chunk_seq,
            dc.chunk_text, dc.embedding,
            ir.overall_grade AS severity, ir.inspect_date AS source_date,
-           a.asset_id, a.name AS asset_name, a.asset_type,
+           a.asset_id, a.name AS asset_name, a.asset_type, a.criticality,
            d.district_id, d.name AS district_name
     FROM document_chunks dc
     JOIN inspection_reports ir ON dc.source_id = ir.report_id
@@ -303,7 +336,7 @@ CREATE OR REPLACE VIEW v_chunks_unified AS
     SELECT dc.chunk_id, dc.source_table, dc.source_id, dc.chunk_seq,
            dc.chunk_text, dc.embedding,
            inf.severity, ir.inspect_date AS source_date,
-           a.asset_id, a.name AS asset_name, a.asset_type,
+           a.asset_id, a.name AS asset_name, a.asset_type, a.criticality,
            d.district_id, d.name AS district_name
     FROM document_chunks dc
     JOIN inspection_findings inf ON dc.source_id = inf.finding_id

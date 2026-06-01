@@ -1,18 +1,19 @@
 #!/bin/bash
 set -euo pipefail
 
-# PRISM SQL*Plus seed data loader generated from prism-seed.py.
+# PRISM SQL*Plus seed data loader.
 #
-# This script loads the same seed data without Python. It expects the PRISM
-# schema tables to already exist, which this repo creates in 30-populate-prism.sh.
-# Because this file is named 29-load-prism-data1.sh, do not rely on startup
-# filename ordering unless the schema creation script has already run.
+# This script loads the PRISM seed data without Python. It expects the PRISM
+# schema tables to already exist, which this repo creates in
+# 30-create-prism-db-objects.sh. Because this file is named
+# 35-load-prism-initial-data.sh, Oracle container startup ordering will run it
+# after the schema creation script.
 #
 # Host example:
-#   DBPASSWORD='...' DBCONNECTION='localhost:1521/freepdb1' ./29-load-prism-data1.sh
+#   DBPASSWORD='...' DBCONNECTION='localhost:1521/freepdb1' ./35-load-prism-initial-data.sh
 #
 # DB container example:
-#   DBPASSWORD='...' DBCONNECTION='localhost:1521/freepdb1' /opt/oracle/scripts/startup/29-load-prism-data1.sh
+#   DBPASSWORD='...' DBCONNECTION='localhost:1521/freepdb1' /opt/oracle/scripts/startup/35-load-prism-initial-data.sh
 
 DBUSER="${DBUSER:-PRISM}"
 DBPASSWORD="${DBPASSWORD:-${APP_DB_ADMIN_PWD:-${ORACLE_PWD:-Welcome202626ai}}}"
@@ -176,7 +177,9 @@ begin
   append_json(q'~,{"name":"Meridian Cut Retaining Wall","asset_type":"retaining_wall","criticality":4,"district_name":"Meridian Heights","status":"active","commissioned_date":"2003-08-22","description":"Reinforced earth retaining wall along the highway cut for Meridian Overpass approaches.","specifications":{"length_m":280,"height_m":8.0,"material":"mechanically stabilized earth","designLoad_kpa":20}}~');
   append_json(q'~,{"name":"Northern Reservoir","asset_type":"reservoir","criticality":5,"district_name":"Northgate Industrial","status":"active","commissioned_date":"1978-09-10","description":"Primary potable water storage reservoir supplying the northern half of the city via Pipeline North-7.","specifications":{"capacity_ml":85,"depth_m":12,"coverType":"floating cover","treatmentOnsite":false}}~');
   append_json(q'~,{"name":"Greenfield Solar Array","asset_type":"solar_installation","criticality":3,"district_name":"Greenfield Park","status":"active","commissioned_date":"2021-02-15","description":"Distributed rooftop and ground-mount solar installation across Greenfield Park public buildings.","specifications":{"peakCapacity_kw":2400,"panelCount":6000,"inverterType":"string","annualYield_mwh":3800}}~');
-  append_json(q'~,{"name":"Northgate Freight Terminal","asset_type":"rail_terminal","criticality":4,"district_name":"Northgate Industrial","status":"active","commissioned_date":"1982-11-30","description":"Rail freight terminal handling bulk materials for Northgate Industrial facilities.","specifications":{"trackCount":6,"maxTrainLength_m":800,"craneCapacity_t":50,"annualThroughput_t":2500000}}]~');
+  append_json(q'~,{"name":"Northgate Freight Terminal","asset_type":"rail_terminal","criticality":4,"district_name":"Northgate Industrial","status":"active","commissioned_date":"1982-11-30","description":"Rail freight terminal handling bulk materials for Northgate Industrial facilities.","specifications":{"trackCount":6,"maxTrainLength_m":800,"craneCapacity_t":50,"annualThroughput_t":2500000}}~');
+  append_json(q'~,{"name":"City Operations Control Center","asset_type":"operations_center","criticality":5,"district_name":"Central Commons","status":"active","commissioned_date":"2016-04-05","description":"Central SCADA and city infrastructure coordination facility used by operators to monitor power, water, bridge, and environmental systems.","specifications":{"operatingSeats":18,"backupPowerHours":72,"scadaSystems":["power grid","water distribution","transportation","environmental monitoring"],"networkZones":6,"incidentRooms":3}}~');
+  append_json(q'~,{"name":"Emergency Operations Center","asset_type":"emergency_operations_center","criticality":5,"district_name":"Central Commons","status":"active","commissioned_date":"2011-09-12","description":"Citywide emergency coordination facility activated during infrastructure incidents, flood events, hazardous releases, and major service disruptions.","specifications":{"dispatchConsoles":24,"backupPowerHours":96,"activationLevel":"citywide","shelterCapacity":120,"satelliteLinks":4}}]~');
   insert into infrastructure_assets (
     district_id, name, asset_type, criticality, status, commissioned_date, description, specifications
   )
@@ -203,7 +206,8 @@ begin
 
   reset_json;
   append_json(q'~[{"from_asset_name":"Harbor Bridge Sensor Array A","to_asset_name":"Harbor Bridge","connection_type":"monitors","description":"North pylon structural health monitoring"},{"from_asset_name":"Harbor Bridge Sensor Array B","to_asset_name":"Harbor Bridge","connection_type":"monitors","description":"South pylon and deck midspan monitoring"},{"from_asset_name":"Flood Gauge Station R1","to_asset_name":"Riverside Pump Station","connection_type":"monitors","description":"River level triggers pump activation"},{"from_asset_name":"Air Quality Monitor NI-01","to_asset_name":"Northgate Freight Terminal","connection_type":"monitors","description":"Perimeter air quality monitoring for freight operations"},{"from_asset_name":"Seismic Station CC-01","to_asset_name":"Meridian Overpass","connection_type":"monitors","description":"Strong-motion monitoring for structural assessment"},{"from_asset_name":"Substation Gamma","to_asset_name":"Ironworks Water Treatment Plant","connection_type":"powers","description":"Primary power supply for treatment plant operations"},{"from_asset_name":"Substation Gamma","to_asset_name":"Harbor Bridge","connection_type":"powers","description":"Bridge lighting and sensor power supply"},{"from_asset_name":"Substation Delta","to_asset_name":"Northgate Freight Terminal","connection_type":"powers","description":"Power supply for terminal cranes and facilities"},{"from_asset_name":"Substation Delta","to_asset_name":"Comms Tower Beta","connection_type":"powers","description":"Power supply for industrial communications"},{"from_asset_name":"Substation Epsilon","to_asset_name":"Seismic Station CC-01","connection_type":"powers","description":"Mains power with UPS backup"},{"from_asset_name":"Greenfield Solar Array","to_asset_name":"Greenfield Booster Station","connection_type":"powers","description":"Supplementary solar power for booster pumps"},{"from_asset_name":"Northern Reservoir","to_asset_name":"Pipeline North-7","connection_type":"feeds","description":"Potable water supply from reservoir to distribution"},{"from_asset_name":"Pipeline North-7","to_asset_name":"Ironworks Water Treatment Plant","connection_type":"feeds","description":"Raw water supply to treatment facility"},{"from_asset_name":"Pipeline South-3","to_asset_name":"Greenfield Booster Station","connection_type":"feeds","description":"Distribution main to pressure booster"},{"from_asset_name":"Ironworks Water Treatment Plant","to_asset_name":"Harbor Outfall Main","connection_type":"feeds","description":"Treated effluent discharge to harbor"},{"from_asset_name":"Riverside Pump Station","to_asset_name":"Flood Gauge Station R1","connection_type":"connects-to","description":"Pump station intake at gauge location"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Comms Tower Beta","~');
-  append_json(q'~connection_type":"connects-to","description":"Microwave backhaul link between towers"},{"from_asset_name":"Comms Tower Beta","to_asset_name":"Harbor Relay Station","connection_type":"connects-to","description":"Network relay for port operations"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Harbor Bridge Sensor Array A","connection_type":"connects-to","description":"IoT data backhaul from bridge sensors"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Harbor Bridge Sensor Array B","connection_type":"connects-to","description":"IoT data backhaul from bridge sensors"},{"from_asset_name":"Comms Tower Beta","to_asset_name":"Air Quality Monitor NI-01","connection_type":"connects-to","description":"Telemetry data backhaul"},{"from_asset_name":"Harbor Seawall Section A","to_asset_name":"Harbor Bridge","connection_type":"supports","description":"Seawall protects bridge abutment foundations"},{"from_asset_name":"Meridian Cut Retaining Wall","to_asset_name":"Meridian Overpass","connection_type":"supports","description":"Retaining wall stabilizes overpass approach embankments"},{"from_asset_name":"Central Gas Distribution","to_asset_name":"Substation Epsilon","connection_type":"connects-to","description":"Gas supply for backup generation at substation"},{"from_asset_name":"Pipeline North-7","to_asset_name":"Pipeline South-3","connection_type":"connects-to","description":"Interconnection valve at distribution junction"},{"from_asset_name":"Substation Gamma","to_asset_name":"Substation Epsilon","connection_type":"powers","description":"132kV to 33kV step-down feed via transmission line T4-Central"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Seismic Station CC-01","connection_type":"connects-to","description":"Seismic data telemetry backhaul to central monitoring"},{"from_asset_name":"Flood Gauge Station R1","to_asset_name":"Riverside Pedestrian Bridge","connection_type":"monitors","description":"River level monitoring at pedestrian bridge crossing"}]~');
+  append_json(q'~connection_type":"connects-to","description":"Microwave backhaul link between towers"},{"from_asset_name":"Comms Tower Beta","to_asset_name":"Harbor Relay Station","connection_type":"connects-to","description":"Network relay for port operations"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Harbor Bridge Sensor Array A","connection_type":"connects-to","description":"IoT data backhaul from bridge sensors"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Harbor Bridge Sensor Array B","connection_type":"connects-to","description":"IoT data backhaul from bridge sensors"},{"from_asset_name":"Comms Tower Beta","to_asset_name":"Air Quality Monitor NI-01","connection_type":"connects-to","description":"Telemetry data backhaul"},{"from_asset_name":"Harbor Seawall Section A","to_asset_name":"Harbor Bridge","connection_type":"supports","description":"Seawall protects bridge abutment foundations"},{"from_asset_name":"Meridian Cut Retaining Wall","to_asset_name":"Meridian Overpass","connection_type":"supports","description":"Retaining wall stabilizes overpass approach embankments"},{"from_asset_name":"Central Gas Distribution","to_asset_name":"Substation Epsilon","connection_type":"connects-to","description":"Gas supply for backup generation at substation"},{"from_asset_name":"Pipeline North-7","to_asset_name":"Pipeline South-3","connection_type":"connects-to","description":"Interconnection valve at distribution junction"},{"from_asset_name":"Substation Gamma","to_asset_name":"Substation Epsilon","connection_type":"powers","description":"132kV to 33kV step-down feed via transmission line T4-Central"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Seismic Station CC-01","connection_type":"connects-to","description":"Seismic data telemetry backhaul to central monitoring"},{"from_asset_name":"Flood Gauge Station R1","to_asset_name":"Riverside Pedestrian Bridge","connection_type":"monitors","description":"River level monitoring at pedestrian bridge crossing"}~');
+  append_json(q'~,{"from_asset_name":"City Operations Control Center","to_asset_name":"Substation Gamma","connection_type":"monitors","description":"SCADA operators monitor transformer health, relay events, and load transfer risk"},{"from_asset_name":"City Operations Control Center","to_asset_name":"Pipeline North-7","connection_type":"monitors","description":"Operations center receives pressure, valve, and leak telemetry"},{"from_asset_name":"City Operations Control Center","to_asset_name":"Emergency Operations Center","connection_type":"coordinates-with","description":"Operations staff escalate infrastructure incidents to emergency command"},{"from_asset_name":"Emergency Operations Center","to_asset_name":"Harbor Bridge","connection_type":"coordinates","description":"Emergency command coordinates bridge closures and public safety messaging"},{"from_asset_name":"Emergency Operations Center","to_asset_name":"Riverside Pump Station","connection_type":"coordinates","description":"Emergency command coordinates flood pump deployment during storm events"},{"from_asset_name":"Emergency Operations Center","to_asset_name":"Pipeline North-7","connection_type":"coordinates","description":"Emergency command coordinates water main isolation and customer notifications"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"City Operations Control Center","connection_type":"connects-to","description":"Primary wireless backhaul into the city operations network"}]~');
   insert into asset_connections (from_asset_id, to_asset_id, connection_type, description)
   select from_asset.asset_id,
          to_asset.asset_id,
@@ -261,6 +265,33 @@ begin
   end if;
   dbms_lob.freetemporary(l_json);
 
+  insert into maintenance_logs (asset_id, log_date, severity, narrative)
+  select a.asset_id,
+         sysdate - s.days_ago,
+         s.severity,
+         s.narrative
+    from (
+      select 'Substation Gamma' asset_name,
+             'critical' severity,
+             q'~SCADA correlation drill: Substation Gamma transformer T2 reported relay chatter, cooling fan failure, and rising oil temperature during peak load. The City Operations Control Center correlated the event with voltage sag alarms feeding Harbor Bridge lighting, Ironworks Water Treatment Plant pumps, and Substation Epsilon. Operators transferred load, opened an emergency work order, and notified the Emergency Operations Center for cascading outage monitoring.~' narrative,
+             1 days_ago
+        from dual
+      union all
+      select 'City Operations Control Center',
+             'warning',
+             q'~Control room operators observed repeated SCADA alarm bursts tied to Substation Gamma T2 protective relay instability. Event timeline review showed 11 relay chatter events in 18 minutes, one failed cooling fan telemetry channel, and elevated load transfer risk to Central Commons feeders. Operators created a root-cause incident package and linked it to Substation Gamma for follow-up analysis.~',
+             1
+        from dual
+      union all
+      select 'Emergency Operations Center',
+             'warning',
+             q'~Emergency Operations Center opened a coordination watch for potential cascading outage from Substation Gamma. Staff prepared public notification templates for Harbor Bridge traffic controls, water treatment continuity plans, and backup dispatch coverage. No citywide activation was required, but the watch remains tied to Substation Gamma until relay testing and cooling repairs are complete.~',
+             1
+        from dual
+    ) s
+    join infrastructure_assets a on a.name = s.asset_name;
+  dbms_output.put_line('  Inserted ' || sql%rowcount || ' scenario maintenance logs.');
+
   l_json := load_json_file('inspection_reports.json');
   l_inserted := 0;
   l_findings := 0;
@@ -314,6 +345,50 @@ begin
       )) f;
     l_findings := l_findings + sql%rowcount;
   end loop;
+
+  select asset_id
+    into l_asset_id
+    from infrastructure_assets
+   where name = 'Substation Gamma';
+
+  insert into inspection_reports (asset_id, inspector, inspect_date, overall_grade, summary)
+  values (
+    l_asset_id,
+    'Riley Chen',
+    sysdate - 1,
+    'D',
+    'Scenario inspection: Substation Gamma has an active reliability concern centered on transformer T2 relay instability, degraded cooling fan performance, and downstream load transfer risk. Findings connect directly to City Operations Control Center alarms and Emergency Operations Center watch status. Immediate relay testing, fan replacement, and load-transfer validation are required before returning the asset to normal risk posture.'
+  )
+  returning report_id into l_report_id;
+  l_inserted := l_inserted + 1;
+
+  insert into inspection_findings (report_id, category, severity, description, recommendation)
+  select l_report_id,
+         f.category,
+         f.severity,
+         f.description,
+         f.recommendation
+    from (
+      select 'electrical protection' category,
+             'critical' severity,
+             'Protective relay on transformer T2 produced repeated chatter events during a controlled load-transfer test. Event recorder confirms unstable trip logic under peak load conditions and correlates with SCADA voltage sag alarms.' description,
+             'Remove T2 from automatic transfer service, perform relay bench testing, validate protection settings, and require control center sign-off before restoring normal operations.' recommendation
+        from dual
+      union all
+      select 'cooling system',
+             'critical',
+             'Cooling fan assembly Fan-AX-1200 failed to sustain rated airflow and transformer oil temperature rose toward alarm threshold during the same event window.',
+             'Replace the failed fan assembly, dynamically balance the cooling bank, and monitor oil temperature under staged load for at least two operating cycles.'
+        from dual
+      union all
+      select 'operational coordination',
+             'warning',
+             'City Operations Control Center and Emergency Operations Center procedures were followed, but incident notes used inconsistent asset tags for downstream Harbor Bridge and water-treatment dependencies.',
+             'Standardize incident tags for connected assets and attach the graph dependency list to future Substation Gamma escalation packages.'
+        from dual
+    ) f;
+  l_findings := l_findings + sql%rowcount;
+
   dbms_output.put_line('  Inserted ' || l_inserted || ' inspection reports.');
   dbms_output.put_line('  Inserted ' || l_findings || ' inspection findings.');
   if l_skipped > 0 then
@@ -361,5 +436,5 @@ SQL
 echo
 echo "========================================================================"
 echo "  Seed data loading complete."
-echo "  Next step: run prism-ingest.py or a SQL equivalent to vectorize content."
+echo "  Next step: run 40-generate-embeddings.sh to vectorize content."
 echo "========================================================================"
