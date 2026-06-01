@@ -72,6 +72,11 @@ COPY ./jl_config/custom/ /etc/jupyter/custom/
 COPY ./jl_config/labconfig/default_setting_overrides.json /etc/jupyter/labconfig/default_setting_overrides.json
 COPY ./jl_config/labconfig/page_config.json /etc/jupyter/labconfig/page_config.json
 
+# Copy notebooks and supportiong SQL files to notebook location
+RUN mkdir -p /etc/jupyter/notebooks/
+COPY ./jl_notebooks/*.ipynb /etc/jupyter/notebooks/
+COPY ./jl_notebooks/*.sql /etc/jupyter/notebooks/
+
 # Switch to the new user
 #USER $NB_USER
 WORKDIR /home/
