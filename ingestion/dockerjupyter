@@ -73,9 +73,9 @@ COPY ./jl_config/labconfig/default_setting_overrides.json /etc/jupyter/labconfig
 COPY ./jl_config/labconfig/page_config.json /etc/jupyter/labconfig/page_config.json
 
 # Copy notebooks and supportiong SQL files to notebook location
-RUN mkdir -p /home/opc/ingestion/app/lab/aidata_dev_vscode_privai/notebooks/
-COPY ./jl_notebooks/*.ipynb /home/opc/ingestion/app/lab/aidata_dev_vscode_privai/notebooks/
-COPY ./jl_notebooks/*.sql /home/opc/ingestion/app/lab/aidata_dev_vscode_privai/notebooks/
+# RUN mkdir -p /home/opc/ingestion/app/lab/aidata_dev_vscode_privai/notebooks/
+# COPY ./jl_notebooks/*.ipynb /home/opc/ingestion/app/lab/aidata_dev_vscode_privai/notebooks/
+# COPY ./jl_notebooks/*.sql /home/opc/ingestion/app/lab/aidata_dev_vscode_privai/notebooks/
 
 # Switch to the new user
 #USER $NB_USER

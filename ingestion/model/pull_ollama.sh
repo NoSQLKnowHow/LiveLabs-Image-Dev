@@ -3,8 +3,6 @@ set -euo pipefail
 
 MODELS=(
   "llama3.2"
-  "gemma3:4b"
-  "nomic-embed-text-v2-moe:latest"
 )
 
 ollama serve &
