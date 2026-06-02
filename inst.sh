@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #######    S T A R T      S C R I P T    ######
-#######   (this is for Oracle Linux 9)   ######
+#######   (This is for Oracle Linux 9)   ######
 
 ## update
 sudo dnf update -y
@@ -92,7 +92,6 @@ cp /home/opc/init/user-podman.service /home/opc/.config/systemd/user/.
 cp /home/opc/init/sync-jl-notebooks.service /home/opc/.config/systemd/user/.
 chmod +x /home/opc/init/sync-jl-notebooks.sh
 ##########
-##########
 
 mkdir -p /home/opc/ingestion/oradata
 mkdir -p /home/opc/ingestion/dmdump
@@ -103,7 +102,13 @@ chmod 700 /home/opc/ingestion/dmdump
 chmod 775 /home/opc/ingestion/runtime
 chmod 775 /home/opc/ingestion/runtime/jl_notebooks
 
-
+# Try to source in the .env, if it is there, also log into the oracle image registry.
+if [[ -f /home/opc/.env ]]; then
+  source /home/opc/.env
+  
+  # Log into Oracle image registry so Podman can load Oracle Private AI container image
+  /usr/bin/podman login container-registry.oracle.com --username $REUSER --password $REPWD
+fi
 
 sudo systemctl daemon-reload
 export XDG_RUNTIME_DIR=/run/user/$UID
