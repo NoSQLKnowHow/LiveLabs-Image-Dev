@@ -1,0 +1,17 @@
+[Unit]
+Description=Sync JupyterLab notebooks from GitHub
+After=network-online.target
+Wants=network-online.target
+Before=user-podman.service
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+Environment=JL_NOTEBOOKS_REPO_URL=https://github.com/NoSQLKnowHow/LiveLabs-Image-Dev.git
+Environment=JL_NOTEBOOKS_REPO_REF=main
+Environment=JL_NOTEBOOKS_REPO_PATH=ingestion/jl_notebooks
+Environment=JL_NOTEBOOKS_TARGET_DIR=/home/opc/ingestion/runtime/jl_notebooks
+ExecStart=/bin/bash /home/opc/init/sync-jl-notebooks.sh
+
+[Install]
+WantedBy=default.target

@@ -25,6 +25,7 @@ services:
       - "/home/opc/.env"
     volumes:
       - "./app/lab/aidata_dev_vscode_privai:/home/:Z"
+      - "./runtime/jl_notebooks:/home/notebooks:Z"
       - "/home/opc/.env:/home/.env:Z"
       - "/home/opc/.vncpwd.env:/home/.vncpwd.env:Z"
       - "./jl_config/jupyter_lab_config.py:/etc/jupyter/jupyter_lab_config.py:ro,Z"

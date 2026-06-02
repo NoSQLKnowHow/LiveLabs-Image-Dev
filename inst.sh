@@ -89,20 +89,27 @@ mkdir -p /home/opc/.config/systemd/user
 # wget -O /home/opc/build_dev.zip "https://c4u04.objectstorage.us-ashburn-1.oci.customer-oci.com/p/i-WDpQq_yUvSxLbfCPfYNyvCFyz6Rv7gvQaBPTHeUlvjpPSN_Hvh5_Zyk7pMXWlu/n/c4u04/b/bootstrap/o/aidata_dev_vscode_privai/build.zip"
 unzip -oq /home/opc/build_dev.zip -d /home/opc/ && rm /home/opc/build_dev.zip
 cp /home/opc/init/user-podman.service /home/opc/.config/systemd/user/.
+cp /home/opc/init/sync-jl-notebooks.service /home/opc/.config/systemd/user/.
+chmod +x /home/opc/init/sync-jl-notebooks.sh
 ##########
 ##########
 
 mkdir -p /home/opc/ingestion/oradata
 mkdir -p /home/opc/ingestion/dmdump
+mkdir -p /home/opc/ingestion/runtime/jl_notebooks
 
 chmod 700 /home/opc/ingestion/oradata
 chmod 700 /home/opc/ingestion/dmdump
+chmod 775 /home/opc/ingestion/runtime
+chmod 775 /home/opc/ingestion/runtime/jl_notebooks
 
 
 
 sudo systemctl daemon-reload
 export XDG_RUNTIME_DIR=/run/user/$UID
 systemctl --user daemon-reload
+systemctl --user enable sync-jl-notebooks
+systemctl --user start sync-jl-notebooks
 systemctl --user enable user-podman
 systemctl --user start user-podman
 

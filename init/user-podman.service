@@ -1,7 +1,7 @@
 [Unit]
 Description=Podman Compose App
-After=network-online.target
-Wants=network-online.target
+After=network-online.target sync-jl-notebooks.service
+Wants=network-online.target sync-jl-notebooks.service
 
 [Service]
 Type=simple
