@@ -36,7 +36,15 @@ if [[ ! -d "$SOURCE_DIR" ]]; then
   exit 1
 fi
 
-cp -a "$SOURCE_DIR"/. "$TARGET_DIR"/
-chmod -R u+rwX,g+rwX,o+rX "$TARGET_DIR"
+while IFS= read -r -d '' src_file; do
+  rel_path="${src_file#"$SOURCE_DIR"/}"
+  mkdir -p "$TARGET_DIR/$(dirname "$rel_path")"
+  cp "$src_file" "$TARGET_DIR/$rel_path"
+done < <(
+  find "$SOURCE_DIR" -type f \( -name '*.sql' -o -name '*.ipynb' \) -print0
+)
+
+find "$TARGET_DIR" -type d -exec chmod 0775 {} +
+find "$TARGET_DIR" -type f -exec chmod 0664 {} +
 
 echo "Synced JupyterLab notebooks from $REPO_URL/$REPO_PATH to $TARGET_DIR"
