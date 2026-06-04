@@ -2,13 +2,13 @@
 set -euo pipefail
 
 ADMIN_USER="${APP_DB_ADMIN_USER:-ADMIN}"
-ADMIN_PWD="${APP_DB_ADMIN_PWD:-${ORACLE_PWD:-}}"
+ADMIN_PWD="${APP_DB_ADMIN_PWD:-${ORACLE_PWD:-Welcome202626ai}}"
 MODEL_NAME="${DB_ONNX_MODEL_NAME:-ALL_MINILM_L12_V2}"
 MODEL_FILE="${DB_ONNX_MODEL_FILE:-all_MiniLM_L12_v2.onnx}"
 MODEL_URL="${DB_ONNX_MODEL_URL:-https://adwc4pm.objectstorage.us-ashburn-1.oci.customer-oci.com/p/iPX9W0MZeRkwJKWdFmdJCemmN-iKAl_bFvNGYLW7YqIrw4kKsukL24J2q93Beb9S/n/adwc4pm/b/OML-ai-models/o/all_MiniLM_L12_v2.onnx}"
 
 if [[ -z "${ADMIN_PWD}" ]]; then
-  echo "APP_DB_ADMIN_PWD and ORACLE_PWD are both empty; cannot provision ${ADMIN_USER}."
+  echo "APP_DB_ADMIN_PWD, ORACLE_PWD, and the default password fallback are all empty; cannot provision ${ADMIN_USER}."
   exit 1
 fi
 
@@ -103,7 +103,6 @@ ALTER USER ${APP_USER} IDENTIFIED BY "${ADMIN_PWD_ESCAPED}" ACCOUNT UNLOCK;
 GRANT CREATE SESSION TO ${APP_USER};
 GRANT UNLIMITED TABLESPACE TO ${APP_USER};
 GRANT CONNECT, RESOURCE TO ${APP_USER};
-GRANT CREATE SESSION TO ${APP_USER};
 GRANT CREATE TABLE TO ${APP_USER};
 GRANT CREATE VIEW TO ${APP_USER};
 GRANT CREATE SEQUENCE TO ${APP_USER};
@@ -121,31 +120,6 @@ GRANT DB_DEVELOPER_ROLE TO ${APP_USER};
 -- PL/SQL packages for vector operations
 GRANT EXECUTE ON DBMS_VECTOR TO ${APP_USER};
 GRANT EXECUTE ON DBMS_VECTOR_CHAIN TO ${APP_USER};
-GRANT READ, WRITE ON DIRECTORY DM_DUMP TO ${APP_USER};
-
--- Allow outbound HTTP from the admin schema for local model providers such as privateai.
--- This is a workshop convenience setting; tighten host scope for production deployments.
-declare
-begin
-  dbms_network_acl_admin.append_host_ace(
-    host => '*',
-    ace  => xs\$ace_type(
-      privilege_list => xs\$name_list('connect', 'resolve'),
-      principal_name => '${APP_USER}',
-      principal_type => xs_acl.ptype_db
-    )
-  );
-  dbms_output.put_line('Granted wildcard network ACL to ${APP_USER}.');
-exception
-  when others then
-    if sqlcode = -46377 then
-      dbms_output.put_line('Wildcard network ACL already exists for ${APP_USER}.');
-    else
-      raise;
-    end if;
-end;
-/
-
 GRANT READ, WRITE ON DIRECTORY DM_DUMP TO ${APP_USER};
 
 ALTER SESSION SET CURRENT_SCHEMA = ${APP_USER};

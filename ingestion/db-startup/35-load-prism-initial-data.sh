@@ -140,15 +140,88 @@ begin
 
   reset_json;
   append_json(q'~[{"name":"Harbor District","classification":"industrial","population":12400,"area_sq_km":8.7,"description":"Waterfront industrial zone housing the city's primary port facilities, maritime infrastructure, and coastal monitoring systems."},{"name":"Meridian Heights","classification":"residential","population":45200,"area_sq_km":12.3,"description":"Primary residential district with mixed-density housing, neighborhood parks, and distributed utility infrastructure."},{"name":"Ironworks Quarter","classification":"industrial","population":8900,"area_sq_km":6.1,"description":"Heavy industrial zone containing power generation, water treatment, and waste management facilities."},{"name":"Central Commons","classification":"mixed-use","population":31500,"area_sq_km":4.2,"description":"City center with commercial towers, civic buildings, transit hubs, and high-density residential blocks."},{"name":"Greenfield Park","classification":"residential","population":28700,"area_sq_km":15.8,"description":"Suburban residential district with extensive green spaces, underground utility corridors, and distributed solar installations."},{"name":"Riverside Corridor","classification":"commercial","population":19300,"area_sq_km":5.4,"description":"Commercial and light industrial strip along the river, featuring warehousing, logistics facilities, and flood management infrastructure."},{"name":"Northgate Industrial","classification":"industrial","population":5600,"area_sq_km":9.9,"description":"Northern industrial park with chemical processing plants, rail freight terminals, and high-voltage power distribution."}]~');
-  insert into districts (name, classification, population, area_sq_km, description)
-  select name, classification, population, area_sq_km, description
-    from json_table(l_json, '\$[*]' columns (
-      name           varchar2(100)  path '\$.name',
-      classification varchar2(50)   path '\$.classification',
-      population     number         path '\$.population',
-      area_sq_km     number         path '\$.area_sq_km',
-      description    varchar2(4000) path '\$.description'
-    ));
+  insert into districts (
+    name, classification, population, area_sq_km,
+    center_latitude, center_longitude, boundary, description
+  )
+  select d.name,
+         d.classification,
+         d.population,
+         d.area_sq_km,
+         d.center_latitude,
+         d.center_longitude,
+         sdo_geometry(
+           2003,
+           4326,
+           null,
+           sdo_elem_info_array(1, 1003, 3),
+           sdo_ordinate_array(d.min_longitude, d.min_latitude, d.max_longitude, d.max_latitude)
+         ),
+         d.description
+    from (
+      select jt.*,
+             case jt.name
+               when 'Harbor District' then 38.926400
+               when 'Meridian Heights' then 38.932600
+               when 'Ironworks Quarter' then 38.919900
+               when 'Central Commons' then 38.924300
+               when 'Greenfield Park' then 38.914900
+               when 'Riverside Corridor' then 38.929200
+               when 'Northgate Industrial' then 38.937500
+             end center_latitude,
+             case jt.name
+               when 'Harbor District' then -79.851700
+               when 'Meridian Heights' then -79.843300
+               when 'Ironworks Quarter' then -79.858500
+               when 'Central Commons' then -79.846900
+               when 'Greenfield Park' then -79.840100
+               when 'Riverside Corridor' then -79.836600
+               when 'Northgate Industrial' then -79.854400
+             end center_longitude,
+             case jt.name
+               when 'Harbor District' then 38.922800
+               when 'Meridian Heights' then 38.929200
+               when 'Ironworks Quarter' then 38.916500
+               when 'Central Commons' then 38.921200
+               when 'Greenfield Park' then 38.911200
+               when 'Riverside Corridor' then 38.925600
+               when 'Northgate Industrial' then 38.934200
+             end min_latitude,
+             case jt.name
+               when 'Harbor District' then 38.929800
+               when 'Meridian Heights' then 38.936000
+               when 'Ironworks Quarter' then 38.923300
+               when 'Central Commons' then 38.927500
+               when 'Greenfield Park' then 38.918700
+               when 'Riverside Corridor' then 38.932700
+               when 'Northgate Industrial' then 38.941000
+             end max_latitude,
+             case jt.name
+               when 'Harbor District' then -79.856900
+               when 'Meridian Heights' then -79.848700
+               when 'Ironworks Quarter' then -79.864000
+               when 'Central Commons' then -79.851500
+               when 'Greenfield Park' then -79.845600
+               when 'Riverside Corridor' then -79.841400
+               when 'Northgate Industrial' then -79.859900
+             end min_longitude,
+             case jt.name
+               when 'Harbor District' then -79.846300
+               when 'Meridian Heights' then -79.838000
+               when 'Ironworks Quarter' then -79.853000
+               when 'Central Commons' then -79.842200
+               when 'Greenfield Park' then -79.834900
+               when 'Riverside Corridor' then -79.831700
+               when 'Northgate Industrial' then -79.849000
+             end max_longitude
+        from json_table(l_json, '\$[*]' columns (
+          name           varchar2(100)  path '\$.name',
+          classification varchar2(50)   path '\$.classification',
+          population     number         path '\$.population',
+          area_sq_km     number         path '\$.area_sq_km',
+          description    varchar2(4000) path '\$.description'
+        )) jt
+    ) d;
   dbms_output.put_line('  Inserted ' || sql%rowcount || ' districts.');
 
   reset_json;
@@ -181,26 +254,100 @@ begin
   append_json(q'~,{"name":"City Operations Control Center","asset_type":"operations_center","criticality":5,"district_name":"Central Commons","status":"active","commissioned_date":"2016-04-05","description":"Central SCADA and city infrastructure coordination facility used by operators to monitor power, water, bridge, and environmental systems.","specifications":{"operatingSeats":18,"backupPowerHours":72,"scadaSystems":["power grid","water distribution","transportation","environmental monitoring"],"networkZones":6,"incidentRooms":3}}~');
   append_json(q'~,{"name":"Emergency Operations Center","asset_type":"emergency_operations_center","criticality":5,"district_name":"Central Commons","status":"active","commissioned_date":"2011-09-12","description":"Citywide emergency coordination facility activated during infrastructure incidents, flood events, hazardous releases, and major service disruptions.","specifications":{"dispatchConsoles":24,"backupPowerHours":96,"activationLevel":"citywide","shelterCapacity":120,"satelliteLinks":4}}]~');
   insert into infrastructure_assets (
-    district_id, name, asset_type, criticality, status, commissioned_date, description, specifications
+    district_id, name, asset_type, criticality, status,
+    latitude, longitude, location,
+    commissioned_date, description, specifications
   )
   select d.district_id,
          a.name,
          a.asset_type,
          a.criticality,
          a.status,
+         a.asset_latitude,
+         a.asset_longitude,
+         sdo_geometry(
+           2001,
+           4326,
+           sdo_point_type(a.asset_longitude, a.asset_latitude, null),
+           null,
+           null
+         ),
          to_date(a.commissioned_date, 'YYYY-MM-DD'),
          a.description,
          json(a.specifications)
-    from json_table(l_json, '\$[*]' columns (
-      name              varchar2(200)  path '\$.name',
-      asset_type        varchar2(100)  path '\$.asset_type',
-      criticality       number         path '\$.criticality',
-      district_name     varchar2(100)  path '\$.district_name',
-      status            varchar2(50)   path '\$.status',
-      commissioned_date varchar2(10)   path '\$.commissioned_date',
-      description       varchar2(4000) path '\$.description',
-      specifications    clob format json path '\$.specifications'
-    )) a
+    from (
+      select jt.*,
+             case jt.name
+               when 'Harbor Bridge' then 38.925900
+               when 'Meridian Overpass' then 38.934000
+               when 'Riverside Pedestrian Bridge' then 38.929900
+               when 'Substation Gamma' then 38.920600
+               when 'Substation Delta' then 38.938200
+               when 'Substation Epsilon' then 38.923600
+               when 'Pipeline North-7' then 38.936100
+               when 'Pipeline South-3' then 38.914500
+               when 'Harbor Outfall Main' then 38.924100
+               when 'Central Gas Distribution' then 38.922800
+               when 'Harbor Bridge Sensor Array A' then 38.926300
+               when 'Harbor Bridge Sensor Array B' then 38.925500
+               when 'Flood Gauge Station R1' then 38.928600
+               when 'Air Quality Monitor NI-01' then 38.937200
+               when 'Seismic Station CC-01' then 38.923900
+               when 'Comms Tower Alpha' then 38.933200
+               when 'Comms Tower Beta' then 38.939000
+               when 'Harbor Relay Station' then 38.927000
+               when 'Ironworks Water Treatment Plant' then 38.919200
+               when 'Riverside Pump Station' then 38.930200
+               when 'Greenfield Booster Station' then 38.915800
+               when 'Harbor Seawall Section A' then 38.926900
+               when 'Meridian Cut Retaining Wall' then 38.932400
+               when 'Northern Reservoir' then 38.940300
+               when 'Greenfield Solar Array' then 38.913800
+               when 'Northgate Freight Terminal' then 38.935500
+               when 'City Operations Control Center' then 38.924400
+               when 'Emergency Operations Center' then 38.925100
+             end asset_latitude,
+             case jt.name
+               when 'Harbor Bridge' then -79.849800
+               when 'Meridian Overpass' then -79.842600
+               when 'Riverside Pedestrian Bridge' then -79.835500
+               when 'Substation Gamma' then -79.858200
+               when 'Substation Delta' then -79.855000
+               when 'Substation Epsilon' then -79.846000
+               when 'Pipeline North-7' then -79.852500
+               when 'Pipeline South-3' then -79.839700
+               when 'Harbor Outfall Main' then -79.853100
+               when 'Central Gas Distribution' then -79.845400
+               when 'Harbor Bridge Sensor Array A' then -79.850500
+               when 'Harbor Bridge Sensor Array B' then -79.849100
+               when 'Flood Gauge Station R1' then -79.836900
+               when 'Air Quality Monitor NI-01' then -79.857300
+               when 'Seismic Station CC-01' then -79.845200
+               when 'Comms Tower Alpha' then -79.844400
+               when 'Comms Tower Beta' then -79.853400
+               when 'Harbor Relay Station' then -79.848600
+               when 'Ironworks Water Treatment Plant' then -79.856400
+               when 'Riverside Pump Station' then -79.834900
+               when 'Greenfield Booster Station' then -79.838900
+               when 'Harbor Seawall Section A' then -79.852100
+               when 'Meridian Cut Retaining Wall' then -79.841500
+               when 'Northern Reservoir' then -79.851200
+               when 'Greenfield Solar Array' then -79.836800
+               when 'Northgate Freight Terminal' then -79.856800
+               when 'City Operations Control Center' then -79.846700
+               when 'Emergency Operations Center' then -79.845900
+             end asset_longitude
+        from json_table(l_json, '\$[*]' columns (
+          name              varchar2(200)  path '\$.name',
+          asset_type        varchar2(100)  path '\$.asset_type',
+          criticality       number         path '\$.criticality',
+          district_name     varchar2(100)  path '\$.district_name',
+          status            varchar2(50)   path '\$.status',
+          commissioned_date varchar2(10)   path '\$.commissioned_date',
+          description       varchar2(4000) path '\$.description',
+          specifications    clob format json path '\$.specifications'
+        )) jt
+    ) a
     join districts d on d.name = a.district_name;
   dbms_output.put_line('  Inserted ' || sql%rowcount || ' infrastructure assets.');
 
@@ -412,16 +559,32 @@ begin
     dbms_output.put_line('  ' || rpad(t.table_name, 30) || lpad(l_count, 6) || ' rows');
   end loop;
 
-  if l_json is not null and dbms_lob.istemporary(l_json) = 1 then
-    dbms_lob.freetemporary(l_json);
-  end if;
+    if l_json is not null and dbms_lob.istemporary(l_json) = 1 then
+      dbms_lob.freetemporary(l_json);
+    end if;
 
-  dbms_output.put_line('Seed data loading complete.');
-exception
-  when others then
-    rollback;
-    if dbms_lob.fileisopen(l_file) = 1 then
-      dbms_lob.fileclose(l_file);
+    insert into prism_build_log (step_name, status, detail)
+    values (
+      '35-load-prism-initial-data',
+      'SUCCESS',
+      'Loaded PRISM seed data, including Elkins WV spatial coordinates.'
+    );
+    commit;
+
+    dbms_output.put_line('Seed data loading complete.');
+  exception
+    when others then
+      rollback;
+      begin
+        insert into prism_build_log (step_name, status, detail)
+        values ('35-load-prism-initial-data', 'FAILURE', substr(sqlerrm, 1, 4000));
+        commit;
+      exception
+        when others then
+          null;
+      end;
+      if dbms_lob.fileisopen(l_file) = 1 then
+        dbms_lob.fileclose(l_file);
     end if;
     if l_json is not null and dbms_lob.istemporary(l_json) = 1 then
       dbms_lob.freetemporary(l_json);
