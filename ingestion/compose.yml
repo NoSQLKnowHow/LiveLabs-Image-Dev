@@ -41,17 +41,17 @@ services:
     ports:
       - "11434:11434"
     restart: always
-  privateai:
-    image: container-registry.oracle.com/database/private-ai:latest
-    container_name: privateai
-    hostname: privateai
-    environment:
-      - PRIVATE_AI_HTTPS_ENABLED=false
-      - PRIVATE_AI_AUTHENTICATION_ENABLED=false
-      - PRIVATE_AI_LOG_STDOUT_ENABLED=true
-    ports:
-      - "8080:8080"
-    restart: always
+  # privateai:
+  #   image: container-registry.oracle.com/database/private-ai:latest
+  #   container_name: privateai
+  #   hostname: privateai
+  #   environment:
+  #     - PRIVATE_AI_HTTPS_ENABLED=false
+  #     - PRIVATE_AI_AUTHENTICATION_ENABLED=false
+  #     - PRIVATE_AI_LOG_STDOUT_ENABLED=true
+  #   ports:
+  #     - "8080:8080"
+  #   restart: always
   aidbfree:
     image: container-registry.oracle.com/database/free:latest
     container_name: aidbfree
