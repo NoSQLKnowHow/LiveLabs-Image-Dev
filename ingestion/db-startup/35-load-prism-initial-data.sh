@@ -249,13 +249,19 @@ begin
   append_json(q'~,{"name":"Harbor Seawall Section A","asset_type":"retaining_wall","criticality":4,"district_name":"Harbor District","status":"active","commissioned_date":"1985-04-20","description":"Concrete seawall protecting Harbor District infrastructure from tidal and storm surge events.","specifications":{"length_m":450,"height_m":6.5,"material":"reinforced concrete with steel sheet piling","designWaveHeight_m":3.5}}~');
   append_json(q'~,{"name":"Meridian Cut Retaining Wall","asset_type":"retaining_wall","criticality":4,"district_name":"Meridian Heights","status":"active","commissioned_date":"2003-08-22","description":"Reinforced earth retaining wall along the highway cut for Meridian Overpass approaches.","specifications":{"length_m":280,"height_m":8.0,"material":"mechanically stabilized earth","designLoad_kpa":20}}~');
   append_json(q'~,{"name":"Northern Reservoir","asset_type":"reservoir","criticality":5,"district_name":"Northgate Industrial","status":"active","commissioned_date":"1978-09-10","description":"Primary potable water storage reservoir supplying the northern half of the city via Pipeline North-7.","specifications":{"capacity_ml":85,"depth_m":12,"coverType":"floating cover","treatmentOnsite":false}}~');
-  append_json(q'~,{"name":"Greenfield Solar Array","asset_type":"solar_installation","criticality":3,"district_name":"Greenfield Park","status":"active","commissioned_date":"2021-02-15","description":"Distributed rooftop and ground-mount solar installation across Greenfield Park public buildings.","specifications":{"peakCapacity_kw":2400,"panelCount":6000,"inverterType":"string","annualYield_mwh":3800}}~');
-  append_json(q'~,{"name":"Northgate Freight Terminal","asset_type":"rail_terminal","criticality":4,"district_name":"Northgate Industrial","status":"active","commissioned_date":"1982-11-30","description":"Rail freight terminal handling bulk materials for Northgate Industrial facilities.","specifications":{"trackCount":6,"maxTrainLength_m":800,"craneCapacity_t":50,"annualThroughput_t":2500000}}~');
-  append_json(q'~,{"name":"City Operations Control Center","asset_type":"operations_center","criticality":5,"district_name":"Central Commons","status":"active","commissioned_date":"2016-04-05","description":"Central SCADA and city infrastructure coordination facility used by operators to monitor power, water, bridge, and environmental systems.","specifications":{"operatingSeats":18,"backupPowerHours":72,"scadaSystems":["power grid","water distribution","transportation","environmental monitoring"],"networkZones":6,"incidentRooms":3}}~');
-  append_json(q'~,{"name":"Emergency Operations Center","asset_type":"emergency_operations_center","criticality":5,"district_name":"Central Commons","status":"active","commissioned_date":"2011-09-12","description":"Citywide emergency coordination facility activated during infrastructure incidents, flood events, hazardous releases, and major service disruptions.","specifications":{"dispatchConsoles":24,"backupPowerHours":96,"activationLevel":"citywide","shelterCapacity":120,"satelliteLinks":4}}]~');
-  insert into infrastructure_assets (
-    district_id, name, asset_type, criticality, status,
-    latitude, longitude, location,
+	  append_json(q'~,{"name":"Greenfield Solar Array","asset_type":"solar_installation","criticality":3,"district_name":"Greenfield Park","status":"active","commissioned_date":"2021-02-15","description":"Distributed rooftop and ground-mount solar installation across Greenfield Park public buildings.","specifications":{"peakCapacity_kw":2400,"panelCount":6000,"inverterType":"string","annualYield_mwh":3800}}~');
+	  append_json(q'~,{"name":"Northgate Freight Terminal","asset_type":"rail_terminal","criticality":4,"district_name":"Northgate Industrial","status":"active","commissioned_date":"1982-11-30","description":"Rail freight terminal handling bulk materials for Northgate Industrial facilities.","specifications":{"trackCount":6,"maxTrainLength_m":800,"craneCapacity_t":50,"annualThroughput_t":2500000}}~');
+	  append_json(q'~,{"name":"City Operations Control Center","asset_type":"operations_center","criticality":5,"district_name":"Central Commons","status":"active","commissioned_date":"2016-04-05","description":"Central SCADA and city infrastructure coordination facility used by operators to monitor power, water, bridge, and environmental systems.","specifications":{"operatingSeats":18,"backupPowerHours":72,"scadaSystems":["power grid","water distribution","transportation","environmental monitoring"],"networkZones":6,"incidentRooms":3}}~');
+	  append_json(q'~,{"name":"Emergency Operations Center","asset_type":"emergency_operations_center","criticality":5,"district_name":"Central Commons","status":"active","commissioned_date":"2011-09-12","description":"Citywide emergency coordination facility activated during infrastructure incidents, flood events, hazardous releases, and major service disruptions.","specifications":{"dispatchConsoles":24,"backupPowerHours":96,"activationLevel":"citywide","shelterCapacity":120,"satelliteLinks":4}}]~');
+	  select count(*)
+	    into l_total
+	    from json_table(l_json, '\$[*]' columns (
+	      name varchar2(200) path '\$.name'
+	    ));
+
+	  insert into infrastructure_assets (
+	    district_id, name, asset_type, criticality, status,
+	    latitude, longitude, location,
     commissioned_date, description, specifications
   )
   select d.district_id,
@@ -346,18 +352,42 @@ begin
           commissioned_date varchar2(10)   path '\$.commissioned_date',
           description       varchar2(4000) path '\$.description',
           specifications    clob format json path '\$.specifications'
-        )) jt
-    ) a
-    join districts d on d.name = a.district_name;
-  dbms_output.put_line('  Inserted ' || sql%rowcount || ' infrastructure assets.');
+	        )) jt
+	    ) a
+	    join districts d on d.name = a.district_name;
+	  l_inserted := sql%rowcount;
+	  dbms_output.put_line('  Inserted ' || l_inserted || ' infrastructure assets.');
+	  if l_inserted != l_total then
+	    raise_application_error(
+	      -20010,
+	      'Infrastructure asset seed mismatch: inserted ' || l_inserted ||
+	      ' of ' || l_total || ' JSON assets. Check district_name values.'
+	    );
+	  end if;
+
+	  select count(*)
+	    into l_count
+	    from infrastructure_assets
+	   where latitude is null
+	      or longitude is null
+	      or location is null;
+	  if l_count > 0 then
+	    raise_application_error(-20011, 'Infrastructure asset location data missing for ' || l_count || ' asset row(s).');
+	  end if;
 
   reset_json;
   append_json(q'~[{"from_asset_name":"Harbor Bridge Sensor Array A","to_asset_name":"Harbor Bridge","connection_type":"monitors","description":"North pylon structural health monitoring"},{"from_asset_name":"Harbor Bridge Sensor Array B","to_asset_name":"Harbor Bridge","connection_type":"monitors","description":"South pylon and deck midspan monitoring"},{"from_asset_name":"Flood Gauge Station R1","to_asset_name":"Riverside Pump Station","connection_type":"monitors","description":"River level triggers pump activation"},{"from_asset_name":"Air Quality Monitor NI-01","to_asset_name":"Northgate Freight Terminal","connection_type":"monitors","description":"Perimeter air quality monitoring for freight operations"},{"from_asset_name":"Seismic Station CC-01","to_asset_name":"Meridian Overpass","connection_type":"monitors","description":"Strong-motion monitoring for structural assessment"},{"from_asset_name":"Substation Gamma","to_asset_name":"Ironworks Water Treatment Plant","connection_type":"powers","description":"Primary power supply for treatment plant operations"},{"from_asset_name":"Substation Gamma","to_asset_name":"Harbor Bridge","connection_type":"powers","description":"Bridge lighting and sensor power supply"},{"from_asset_name":"Substation Delta","to_asset_name":"Northgate Freight Terminal","connection_type":"powers","description":"Power supply for terminal cranes and facilities"},{"from_asset_name":"Substation Delta","to_asset_name":"Comms Tower Beta","connection_type":"powers","description":"Power supply for industrial communications"},{"from_asset_name":"Substation Epsilon","to_asset_name":"Seismic Station CC-01","connection_type":"powers","description":"Mains power with UPS backup"},{"from_asset_name":"Greenfield Solar Array","to_asset_name":"Greenfield Booster Station","connection_type":"powers","description":"Supplementary solar power for booster pumps"},{"from_asset_name":"Northern Reservoir","to_asset_name":"Pipeline North-7","connection_type":"feeds","description":"Potable water supply from reservoir to distribution"},{"from_asset_name":"Pipeline North-7","to_asset_name":"Ironworks Water Treatment Plant","connection_type":"feeds","description":"Raw water supply to treatment facility"},{"from_asset_name":"Pipeline South-3","to_asset_name":"Greenfield Booster Station","connection_type":"feeds","description":"Distribution main to pressure booster"},{"from_asset_name":"Ironworks Water Treatment Plant","to_asset_name":"Harbor Outfall Main","connection_type":"feeds","description":"Treated effluent discharge to harbor"},{"from_asset_name":"Riverside Pump Station","to_asset_name":"Flood Gauge Station R1","connection_type":"connects-to","description":"Pump station intake at gauge location"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Comms Tower Beta","~');
-  append_json(q'~connection_type":"connects-to","description":"Microwave backhaul link between towers"},{"from_asset_name":"Comms Tower Beta","to_asset_name":"Harbor Relay Station","connection_type":"connects-to","description":"Network relay for port operations"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Harbor Bridge Sensor Array A","connection_type":"connects-to","description":"IoT data backhaul from bridge sensors"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Harbor Bridge Sensor Array B","connection_type":"connects-to","description":"IoT data backhaul from bridge sensors"},{"from_asset_name":"Comms Tower Beta","to_asset_name":"Air Quality Monitor NI-01","connection_type":"connects-to","description":"Telemetry data backhaul"},{"from_asset_name":"Harbor Seawall Section A","to_asset_name":"Harbor Bridge","connection_type":"supports","description":"Seawall protects bridge abutment foundations"},{"from_asset_name":"Meridian Cut Retaining Wall","to_asset_name":"Meridian Overpass","connection_type":"supports","description":"Retaining wall stabilizes overpass approach embankments"},{"from_asset_name":"Central Gas Distribution","to_asset_name":"Substation Epsilon","connection_type":"connects-to","description":"Gas supply for backup generation at substation"},{"from_asset_name":"Pipeline North-7","to_asset_name":"Pipeline South-3","connection_type":"connects-to","description":"Interconnection valve at distribution junction"},{"from_asset_name":"Substation Gamma","to_asset_name":"Substation Epsilon","connection_type":"powers","description":"132kV to 33kV step-down feed via transmission line T4-Central"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Seismic Station CC-01","connection_type":"connects-to","description":"Seismic data telemetry backhaul to central monitoring"},{"from_asset_name":"Flood Gauge Station R1","to_asset_name":"Riverside Pedestrian Bridge","connection_type":"monitors","description":"River level monitoring at pedestrian bridge crossing"}~');
-  append_json(q'~,{"from_asset_name":"City Operations Control Center","to_asset_name":"Substation Gamma","connection_type":"monitors","description":"SCADA operators monitor transformer health, relay events, and load transfer risk"},{"from_asset_name":"City Operations Control Center","to_asset_name":"Pipeline North-7","connection_type":"monitors","description":"Operations center receives pressure, valve, and leak telemetry"},{"from_asset_name":"City Operations Control Center","to_asset_name":"Emergency Operations Center","connection_type":"coordinates-with","description":"Operations staff escalate infrastructure incidents to emergency command"},{"from_asset_name":"Emergency Operations Center","to_asset_name":"Harbor Bridge","connection_type":"coordinates","description":"Emergency command coordinates bridge closures and public safety messaging"},{"from_asset_name":"Emergency Operations Center","to_asset_name":"Riverside Pump Station","connection_type":"coordinates","description":"Emergency command coordinates flood pump deployment during storm events"},{"from_asset_name":"Emergency Operations Center","to_asset_name":"Pipeline North-7","connection_type":"coordinates","description":"Emergency command coordinates water main isolation and customer notifications"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"City Operations Control Center","connection_type":"connects-to","description":"Primary wireless backhaul into the city operations network"}]~');
-  insert into asset_connections (from_asset_id, to_asset_id, connection_type, description)
-  select from_asset.asset_id,
-         to_asset.asset_id,
+	  append_json(q'~connection_type":"connects-to","description":"Microwave backhaul link between towers"},{"from_asset_name":"Comms Tower Beta","to_asset_name":"Harbor Relay Station","connection_type":"connects-to","description":"Network relay for port operations"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Harbor Bridge Sensor Array A","connection_type":"connects-to","description":"IoT data backhaul from bridge sensors"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Harbor Bridge Sensor Array B","connection_type":"connects-to","description":"IoT data backhaul from bridge sensors"},{"from_asset_name":"Comms Tower Beta","to_asset_name":"Air Quality Monitor NI-01","connection_type":"connects-to","description":"Telemetry data backhaul"},{"from_asset_name":"Harbor Seawall Section A","to_asset_name":"Harbor Bridge","connection_type":"supports","description":"Seawall protects bridge abutment foundations"},{"from_asset_name":"Meridian Cut Retaining Wall","to_asset_name":"Meridian Overpass","connection_type":"supports","description":"Retaining wall stabilizes overpass approach embankments"},{"from_asset_name":"Central Gas Distribution","to_asset_name":"Substation Epsilon","connection_type":"connects-to","description":"Gas supply for backup generation at substation"},{"from_asset_name":"Pipeline North-7","to_asset_name":"Pipeline South-3","connection_type":"connects-to","description":"Interconnection valve at distribution junction"},{"from_asset_name":"Substation Gamma","to_asset_name":"Substation Epsilon","connection_type":"powers","description":"132kV to 33kV step-down feed via transmission line T4-Central"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"Seismic Station CC-01","connection_type":"connects-to","description":"Seismic data telemetry backhaul to central monitoring"},{"from_asset_name":"Flood Gauge Station R1","to_asset_name":"Riverside Pedestrian Bridge","connection_type":"monitors","description":"River level monitoring at pedestrian bridge crossing"}~');
+	  append_json(q'~,{"from_asset_name":"City Operations Control Center","to_asset_name":"Substation Gamma","connection_type":"monitors","description":"SCADA operators monitor transformer health, relay events, and load transfer risk"},{"from_asset_name":"City Operations Control Center","to_asset_name":"Pipeline North-7","connection_type":"monitors","description":"Operations center receives pressure, valve, and leak telemetry"},{"from_asset_name":"City Operations Control Center","to_asset_name":"Emergency Operations Center","connection_type":"coordinates-with","description":"Operations staff escalate infrastructure incidents to emergency command"},{"from_asset_name":"Emergency Operations Center","to_asset_name":"Harbor Bridge","connection_type":"coordinates","description":"Emergency command coordinates bridge closures and public safety messaging"},{"from_asset_name":"Emergency Operations Center","to_asset_name":"Riverside Pump Station","connection_type":"coordinates","description":"Emergency command coordinates flood pump deployment during storm events"},{"from_asset_name":"Emergency Operations Center","to_asset_name":"Pipeline North-7","connection_type":"coordinates","description":"Emergency command coordinates water main isolation and customer notifications"},{"from_asset_name":"Comms Tower Alpha","to_asset_name":"City Operations Control Center","connection_type":"connects-to","description":"Primary wireless backhaul into the city operations network"}]~');
+	  select count(*)
+	    into l_total
+	    from json_table(l_json, '\$[*]' columns (
+	      from_asset_name varchar2(200) path '\$.from_asset_name'
+	    ));
+
+	  insert into asset_connections (from_asset_id, to_asset_id, connection_type, description)
+	  select from_asset.asset_id,
+	         to_asset.asset_id,
          c.connection_type,
          c.description
     from json_table(l_json, '\$[*]' columns (
@@ -365,10 +395,18 @@ begin
       to_asset_name   varchar2(200)  path '\$.to_asset_name',
       connection_type varchar2(100)  path '\$.connection_type',
       description     varchar2(4000) path '\$.description'
-    )) c
-    join infrastructure_assets from_asset on from_asset.name = c.from_asset_name
-    join infrastructure_assets to_asset on to_asset.name = c.to_asset_name;
-  dbms_output.put_line('  Inserted ' || sql%rowcount || ' asset connections.');
+	    )) c
+	    join infrastructure_assets from_asset on from_asset.name = c.from_asset_name
+	    join infrastructure_assets to_asset on to_asset.name = c.to_asset_name;
+	  l_inserted := sql%rowcount;
+	  dbms_output.put_line('  Inserted ' || l_inserted || ' asset connections.');
+	  if l_inserted != l_total then
+	    raise_application_error(
+	      -20012,
+	      'Asset connection seed mismatch: inserted ' || l_inserted ||
+	      ' of ' || l_total || ' JSON connections. Check from_asset_name/to_asset_name values.'
+	    );
+	  end if;
 
   reset_json;
   append_json(q'~[{"procedureId":"SOP-HV-001","title":"High Voltage Substation Inspection Protocol","category":"electrical","version":"3.2","lastRevised":"2025-11-15","estimatedDuration_min":180,"requiredPersonnel":3,"applicableAssetTypes":["substation"],"safetyChecklist":["Verify all circuits de-energized and locked out","Confirm grounding cables attached at all work points","PPE inspection: arc-flash suit (min CAT 3), insulated gloves (Class 2), face shield","Verify rescue equipment staged and accessible","Confirm communication with control room established"],"equipment":["thermal imaging camera","insulation resistance tester (megger)","partial discharge detector","oil sampling kit","digital multimeter (CAT IV rated)"],"steps":[{"order":1,"action":"Perform visual inspection of all transformer bushings and insulators","notes":"Document any discoloration, cracks, or oil leaks with photos"},{"order":2,"action":"Conduct thermal scan of all bus connections and switchgear","notes":"Flag any connection with temperature differential exceeding 10\u00b0C above ambient"},{"order":3,"action":"Perform insulation resistance testing on each transformer winding","notes":"Minimum acceptable reading: 1 G\u03a9 at 5 kV test voltage"},{"order":4,"action":"Collect oil samples from each transformer for dissolved gas analysis","notes":"Use clean syringes; label with transformer ID and date"},{"order":5,"action":"Inspect cooling systems: fans, radiators, oil pumps","notes":"Run each fan group for 2 minutes and verify operation"},{"order":6,"action":"Check protection relay settings and test trip circuits","notes":"Do not perform live trip tests without control room authorization"},{"order":7,"action":"Inspect earthing system and measure ground resistance","notes":"Maximum acceptable ground resistance: 1 \u03a9"}],"escalation":{"contact":"Grid Operations Center","phone":"555-0142","conditions":["Evidence of active arcing","Transformer oil level below minimum mark","Ground fault detected","Protection relay failure"]}},{"procedureId":"SOP-BR-001","title":"Bridge Structural Assessment Procedure","category":"structural","version":"2.1","lastRevised":"2025-08-20","estimatedDuration_min":240,"requiredPersonnel":4,"applicableAssetTypes":["bridge"],"safetyChecklist":["Traffic management plan approved and signage deployed","Fall protection harnesses inspected and worn by all personnel","Under-bridge inspection platform pre-positioned and load-tested","Marine traffic notified if working over navigable water","Weather check: postpone if wind exceeds 40 km/h or lightning within 10 km"],"equipment":["Schmidt rebound hammer","ultrasonic thickness gauge","crack width comparator cards","half-cell potential meter","drone with high-resolution camera","GPS-enabled measurement tools"],"steps":[{"order":1,"acti~');
@@ -376,13 +414,27 @@ begin
   append_json(q'~:"Inspect all valve chambers for leaks, corrosion, and structural integrity","notes":"Check valve stem packing, flange bolts, and chamber ventilation"},{"order":5,"action":"Conduct hydrostatic pressure test at 1.5x operating pressure","notes":"Hold for minimum 2 hours; acceptable pressure drop: < 0.5%"},{"order":6,"action":"Inspect cathodic protection system: anodes, rectifiers, test stations","notes":"Measure pipe-to-soil potential at each test station; target: -850 mV to -1200 mV (Cu/CuSO4)"},{"order":7,"action":"Survey pipeline route for surface settlement, erosion, or third-party damage","notes":"Walk full route; compare surface levels to baseline survey"}],"escalation":{"contact":"Water Infrastructure Emergency Line","phone":"555-0129","conditions":["Wall thickness below 60% of nominal","Failed hydrostatic test","Active leak detected","Cathodic protection failure across multiple stations"]}},{"procedureId":"SOP-EM-001","title":"Emergency Pipeline Leak Response","category":"emergency","version":"5.1","lastRevised":"2026-01-10","estimatedDuration_min":0,"requiredPersonnel":4,"applicableAssetTypes":["pipeline","pump_station"],"safetyChecklist":["Establish exclusion zone: minimum 25 m radius from leak source","Atmospheric monitoring continuous at exclusion zone boundary","Emergency services notified if gas or hazardous material involved","Downstream consumers notified of potential supply interruption","PPE: waterproof suit, respiratory protection if gas risk, steel-toe boots"],"equipment":["pipe repair clamps (assorted sizes)","portable pump for dewatering","pipe freezing kit","leak sealing compound","portable generator and lighting"],"steps":[{"order":1,"action":"Assess leak severity and classify","notes":"Category 1 (spray/gush) requires immediate isolation"},{"order":2,"action":"Isolate the affected section using upstream and downstream valves","notes":"Coordinate with SCADA control room"},{"order":3,"action":"Establish dewatering and containment at the leak site","notes":"Prevent uncontrolled runoff"},{"order":4,"action":"Apply temporary repair appropriate to pipe material and pressure","notes":"Replace with permanent repair within 72 hours"},{"order":5,"action":"Restore pressure gradually and monitor for 30 minutes","notes":"Increase in 25% increments"},{"order":6,"action":"Document incident with GPS, photos, and cause assessment","notes":"Submit report within 24 hours"}],"escalation":{"contact":"Emergency Operations Center","phone":"555-0911","conditions":["Category 1 leak on main exceeding 300 mm","Any gas leak","Contamination risk to potable supply"]}},{"procedureId":"SOP-CT-001","title":"Communications Tower Routine Maintenance","category":"communications","version":"2.0","lastRevised":"2025-06-18","estimatedDuration_min":150,"requiredPerso~');
   append_json(q'~nnel":2,"applicableAssetTypes":["communication_tower"],"safetyChecklist":["Tower climbing certification verified","Fall arrest system inspected","RF exposure assessment completed","Weather check: no climbing if wind > 50 km/h","Rescue plan in place"],"equipment":["cable analyzer","fiber optic power meter and OTDR","torque wrench set","coaxial connector toolkit","tower-rated tool lanyard system"],"steps":[{"order":1,"action":"Inspect tower structure: legs, bracing, bolted connections, foundation","notes":"Check for corrosion, loose bolts, cracked welds"},{"order":2,"action":"Inspect all antenna mounts, brackets, and alignment","notes":"Verify azimuth and tilt match RF design"},{"order":3,"action":"Test all coaxial and fiber optic cable runs","notes":"Sweep test coax; OTDR test fiber"},{"order":4,"action":"Inspect obstruction lighting","notes":"Replace failed lamps immediately"},{"order":5,"action":"Inspect grounding system","notes":"Maximum 5 ohm for telecom towers"},{"order":6,"action":"Clean and inspect equipment shelter","notes":"Check HVAC, UPS, batteries, fire suppression"}],"escalation":{"contact":"Network Operations Center","phone":"555-0165","conditions":["Structural damage","Obstruction lighting failure","Ground resistance exceeding 10 ohm"]}},{"procedureId":"SOP-WTP-001","title":"Water Treatment Plant Process Audit","category":"water-treatment","version":"3.0","lastRevised":"2025-09-05","estimatedDuration_min":360,"requiredPersonnel":3,"applicableAssetTypes":["treatment_plant"],"safetyChecklist":["Chemical handling PPE available","Safety showers and eyewash tested","Atmospheric monitoring in enclosed areas","Chlorine gas detection verified","Emergency spill kit staged"],"equipment":["portable turbidity meter","pH/ORP meter","dissolved oxygen meter","sample bottles","portable flow meter"],"steps":[{"order":1,"action":"Review SCADA trends for previous 30 days","notes":"Flag any exceedances"},{"order":2,"action":"Inspect primary treatment","notes":"Check scrapers, scum removal, sludge blanket"},{"order":3,"action":"Inspect secondary treatment","notes":"Verify DO setpoints"},{"order":4,"action":"Inspect tertiary treatment and disinfection","notes":"Check UV lamp intensity"},{"order":5,"action":"Audit chemical storage","notes":"Verify inventory"},{"order":6,"action":"Review laboratory QA/QC","notes":"Verify calibration records"},{"order":7,"action":"Inspect sludge handling","notes":"Check digester gas production"},{"order":8,"action":"Review compliance reporting","notes":"Ensure reports submitted on time"}],"escalation":{"contact":"Environmental Compliance Manager","phone":"555-0134","conditions":["Effluent exceeding permit limits","Chemical spill","UV system failure"]}},{"procedureId":"SOP-FLD-001","title":"Flood Event Response and Pump Station ~');
   append_json(q'~Operations","category":"emergency","version":"4.2","lastRevised":"2025-12-01","estimatedDuration_min":0,"requiredPersonnel":3,"applicableAssetTypes":["pump_station","sensor"],"safetyChecklist":["Swift-water rescue team on standby","Exclusion zone around wet well","Backup generator fuel > 75%","Communication with EOC established","Road closure requests submitted"],"equipment":["portable submersible pump","sandbags and flood barriers","portable generator","water level data logger","satellite phone"],"steps":[{"order":1,"action":"Activate flood monitoring protocol","notes":"Begin at river level > 3.5 m"},{"order":2,"action":"Pre-position portable pumps and barriers","notes":"Priority: Riverside underpass, Harbor low points"},{"order":3,"action":"Verify all permanent pump stations operational","notes":"Run each pump for 2 minutes"},{"order":4,"action":"Activate Riverside Pump Station at trigger level","notes":"Confirm SCADA receiving data"},{"order":5,"action":"Deploy field crew to monitor flow paths","notes":"Focus on trash screens and culverts"},{"order":6,"action":"Post-event cleanup and inspection","notes":"Document high-water marks with GPS"}],"escalation":{"contact":"Emergency Operations Center","phone":"555-0911","conditions":["River level exceeding 5.5 m","Pump station failure during event","Road inundation"]}},{"procedureId":"SOP-SW-001","title":"Seawall and Retaining Wall Annual Inspection","category":"structural","version":"1.3","lastRevised":"2025-07-22","estimatedDuration_min":200,"requiredPersonnel":2,"applicableAssetTypes":["retaining_wall"],"safetyChecklist":["Tidal schedule reviewed","Fall protection for crest work","Marine exclusion zone if waterside","Hard hat and high-vis at all times","First aid kit with hypothermia blanket"],"equipment":["crack monitoring pins and caliper","ground-penetrating radar","survey-grade GPS","underwater camera","concrete coring drill"],"steps":[{"order":1,"action":"Survey wall crest and toe levels","notes":"Flag settlement > 15 mm"},{"order":2,"action":"Visual inspection of wall face","notes":"Map all defects on elevation drawings"},{"order":3,"action":"Install or read crack monitoring pins","notes":"Record to 0.05 mm precision"},{"order":4,"action":"Inspect drainage systems","notes":"Blocked weepholes indicate failure"},{"order":5,"action":"Conduct GPR survey along crest","notes":"Focus near stormwater outfalls"},{"order":6,"action":"Inspect toe protection at low tide","notes":"Note scour depth measurements"}],"escalation":{"contact":"Coastal Engineering Division","phone":"555-0176","conditions":["Settlement > 50 mm","Crack growth > 0.5 mm/year","Void detected behind wall"]}},{"procedureId":"SOP-SOL-001","title":"Solar Installation Performance Audit","category":"electrical","version":"1.1","lastRevised":"~');
-  append_json(q'~2025-05-30","estimatedDuration_min":120,"requiredPersonnel":2,"applicableAssetTypes":["solar_installation"],"safetyChecklist":["DC isolation verified","Arc-flash PPE for inverter access","Roof access harness and anchors","No work on wet panels","Fire isolation switches accessible"],"equipment":["IV curve tracer","thermal imaging camera","digital multimeter (CAT III)","irradiance meter","insulation resistance tester"],"steps":[{"order":1,"action":"Review monitoring data vs expected yield","notes":"Flag output < 90% expected"},{"order":2,"action":"Conduct thermal survey of panel strings","notes":"Identify hot spots"},{"order":3,"action":"Perform IV curve tracing on sample strings","notes":"Flag degradation > 2%/year"},{"order":4,"action":"Inspect inverter operation","notes":"Check THD < 5%, PF > 0.95"},{"order":5,"action":"Inspect racking and grounding","notes":"Check for corrosion"},{"order":6,"action":"Clean panels if soiling > 5%","notes":"Deionized water only"}],"escalation":{"contact":"Renewable Energy Operations Manager","phone":"555-0198","conditions":["Inverter failure","DC ground fault","Hot spot > 30C differential"]}}]~');
-  insert into operational_procedures (data)
-  select json(p.data)
-    from json_table(l_json, '\$[*]' columns (
-      data clob format json path '\$'
-    )) p;
-  dbms_output.put_line('  Inserted ' || sql%rowcount || ' operational procedures.');
+	  append_json(q'~2025-05-30","estimatedDuration_min":120,"requiredPersonnel":2,"applicableAssetTypes":["solar_installation"],"safetyChecklist":["DC isolation verified","Arc-flash PPE for inverter access","Roof access harness and anchors","No work on wet panels","Fire isolation switches accessible"],"equipment":["IV curve tracer","thermal imaging camera","digital multimeter (CAT III)","irradiance meter","insulation resistance tester"],"steps":[{"order":1,"action":"Review monitoring data vs expected yield","notes":"Flag output < 90% expected"},{"order":2,"action":"Conduct thermal survey of panel strings","notes":"Identify hot spots"},{"order":3,"action":"Perform IV curve tracing on sample strings","notes":"Flag degradation > 2%/year"},{"order":4,"action":"Inspect inverter operation","notes":"Check THD < 5%, PF > 0.95"},{"order":5,"action":"Inspect racking and grounding","notes":"Check for corrosion"},{"order":6,"action":"Clean panels if soiling > 5%","notes":"Deionized water only"}],"escalation":{"contact":"Renewable Energy Operations Manager","phone":"555-0198","conditions":["Inverter failure","DC ground fault","Hot spot > 30C differential"]}}]~');
+	  select count(*)
+	    into l_total
+	    from json_table(l_json, '\$[*]' columns (
+	      procedure_id varchar2(50) path '\$.procedureId'
+	    ));
+
+	  insert into operational_procedures (data)
+	  select json(p.data)
+	    from json_table(l_json, '\$[*]' columns (
+	      data clob format json path '\$'
+	    )) p;
+	  l_inserted := sql%rowcount;
+	  dbms_output.put_line('  Inserted ' || l_inserted || ' operational procedures.');
+	  if l_inserted != l_total then
+	    raise_application_error(
+	      -20013,
+	      'Operational procedure seed mismatch: inserted ' || l_inserted ||
+	      ' of ' || l_total || ' JSON procedures.'
+	    );
+	  end if;
 
   dbms_output.put_line('--- Phase 2: Generated Content Files ---');
 
@@ -405,11 +457,16 @@ begin
       days_ago   number         path '\$.days_ago'
     )) m
     join infrastructure_assets a on a.name = m.asset_name;
-  l_inserted := sql%rowcount;
-  dbms_output.put_line('  Inserted ' || l_inserted || ' maintenance logs.');
-  if l_total - l_inserted > 0 then
-    dbms_output.put_line('  Skipped ' || (l_total - l_inserted) || ' maintenance logs with unknown assets.');
-  end if;
+	  l_inserted := sql%rowcount;
+	  dbms_output.put_line('  Inserted ' || l_inserted || ' maintenance logs.');
+	  if l_total - l_inserted > 0 then
+	    dbms_output.put_line('  Skipped ' || (l_total - l_inserted) || ' maintenance logs with unknown assets.');
+	    raise_application_error(
+	      -20014,
+	      'Maintenance log seed mismatch: inserted ' || l_inserted ||
+	      ' of ' || l_total || ' generated maintenance logs. Check asset_name values.'
+	    );
+	  end if;
   dbms_lob.freetemporary(l_json);
 
   insert into maintenance_logs (asset_id, log_date, severity, narrative)
@@ -536,11 +593,16 @@ begin
     ) f;
   l_findings := l_findings + sql%rowcount;
 
-  dbms_output.put_line('  Inserted ' || l_inserted || ' inspection reports.');
-  dbms_output.put_line('  Inserted ' || l_findings || ' inspection findings.');
-  if l_skipped > 0 then
-    dbms_output.put_line('  Skipped ' || l_skipped || ' inspection reports with unknown assets.');
-  end if;
+	  dbms_output.put_line('  Inserted ' || l_inserted || ' inspection reports.');
+	  dbms_output.put_line('  Inserted ' || l_findings || ' inspection findings.');
+	  if l_skipped > 0 then
+	    dbms_output.put_line('  Skipped ' || l_skipped || ' inspection reports with unknown assets.');
+	    raise_application_error(
+	      -20015,
+	      'Inspection report seed mismatch: skipped ' || l_skipped ||
+	      ' generated inspection report(s). Check asset_name values.'
+	    );
+	  end if;
   dbms_lob.freetemporary(l_json);
 
   commit;
