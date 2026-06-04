@@ -36,6 +36,7 @@ alter session set current_schema = ${DBUSER_UPPER};
 declare
   l_count    number;
   l_failures number := 0;
+  l_error_detail varchar2(4000);
 
   procedure check_min_count(p_label in varchar2, p_sql in varchar2, p_min_count in number) is
   begin
@@ -97,10 +98,11 @@ begin
   dbms_output.put_line(chr(10) || 'PRISM build verification complete.');
 exception
   when others then
+    l_error_detail := substr(sqlerrm, 1, 4000);
     rollback;
     begin
       insert into prism_build_log (step_name, status, detail)
-      values ('50-verify-prism-build', 'FAILURE', substr(sqlerrm, 1, 4000));
+      values ('50-verify-prism-build', 'FAILURE', l_error_detail);
       commit;
     exception
       when others then

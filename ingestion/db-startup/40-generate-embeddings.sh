@@ -89,6 +89,7 @@ declare
   l_total          number;
   l_started_at     timestamp := systimestamp;
   l_elapsed_secs   number;
+  l_error_detail   varchar2(4000);
 
   procedure assert_source_data is
   begin
@@ -465,10 +466,11 @@ declare
     dbms_output.put_line('Vector ingestion complete.');
   exception
     when others then
+      l_error_detail := substr(sqlerrm, 1, 4000);
       rollback;
       begin
         insert into prism_build_log (step_name, status, detail)
-        values ('40-generate-embeddings', 'FAILURE', substr(sqlerrm, 1, 4000));
+        values ('40-generate-embeddings', 'FAILURE', l_error_detail);
         commit;
       exception
         when others then

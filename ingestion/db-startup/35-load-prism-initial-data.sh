@@ -70,6 +70,7 @@ declare
   l_inserted number;
   l_skipped number;
   l_findings number;
+  l_error_detail varchar2(4000);
 
   procedure reset_json is
   begin
@@ -636,10 +637,11 @@ begin
     dbms_output.put_line('Seed data loading complete.');
   exception
     when others then
+      l_error_detail := substr(sqlerrm, 1, 4000);
       rollback;
       begin
         insert into prism_build_log (step_name, status, detail)
-        values ('35-load-prism-initial-data', 'FAILURE', substr(sqlerrm, 1, 4000));
+        values ('35-load-prism-initial-data', 'FAILURE', l_error_detail);
         commit;
       exception
         when others then
