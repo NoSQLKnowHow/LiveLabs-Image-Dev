@@ -31,11 +31,11 @@ copy_notebook_files() {
     cp "$src_file" "$TARGET_DIR/$rel_path"
     copied=$((copied + 1))
   done < <(
-    find "$source_dir" -type f \( -name '*.sql' -o -name '*.ipynb' -o -name '*.json' \) -print0
+    find "$source_dir" -type f \( -name '*.sql' -o -name '*.ipynb' -o -name '*.json' -o -name '*.svg' \) -print0
   )
 
   if [[ "$copied" -eq 0 ]]; then
-    echo "No .sql, .ipynb, or .json files found in $source_label source: $source_dir"
+    echo "No .sql, .ipynb, .json, or .svg files found in $source_label source: $source_dir"
     return 1
   fi
 

@@ -1,0 +1,16 @@
+sequenceDiagram
+    actor I as Inspector
+    participant C as call_copilot
+    participant DB as Oracle AI Database
+    participant L as Agent LLM
+
+    I->>C: narrative (asset + inspector)
+    C->>DB: 1. resolve thread (SDK)
+    C->>DB: 2. get_asset() · CITY_ASSET
+    C->>DB: 3. get_context_card() · CITY_MESSAGE + CITY_MEMORY + CITY_THREAD
+    C->>DB: 4. find_similar_findings() · VECTOR_DISTANCE on CITY_INSPECTION_FINDING
+    C->>L: 5. system prompt + assembled context
+    L-->>C: 6. diagnosis
+    C->>DB: 7. add_messages() · write CITY_MESSAGE
+    Note over DB: 8. SDK derives: CITY_MEMORY (extractor)<br/>+ CITY_THREAD (summary refresh)
+    C-->>I: answer
