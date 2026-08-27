@@ -20,25 +20,26 @@ RUN mkdir -p /etc/dnf/vars && \
       > /etc/yum.repos.d/oci-included-ol9.repo
 
 # Install system dependencies
+# NumPy 2.5+ requires Python 3.12 or newer.
 RUN dnf update -y && \
     dnf module enable nodejs:20 -y && \
-    dnf -y install oracle-epel-release-el9 git nodejs wget curl python3.11 python3.11-requests python3.11-pip python3.11-setuptools python3.11-wheel \
+    dnf -y install oracle-epel-release-el9 git nodejs wget curl python3.12 python3.12-pip python3.12-setuptools python3.12-wheel \
     libffi-devel openssl openssl-devel tk-devel sudo xz-devel zlib-devel bzip2-devel readline-devel libuuid-devel ncurses-devel \
     libaio oracle-database-preinstall-23ai jdk-26-headless jq bzip2 && \
     dnf clean all && \
-    alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 && \
-    alternatives --set python3 /usr/bin/python3.11 && \
-    ln -sf /usr/bin/python3.11 /usr/bin/python && \
-    ln -sf /usr/bin/pip3.11 /usr/bin/pip
+    alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 && \
+    alternatives --set python3 /usr/bin/python3.12 && \
+    ln -sf /usr/bin/python3.12 /usr/bin/python && \
+    ln -sf /usr/bin/pip3.12 /usr/bin/pip
 
 
 # Install SQLcl
 # Upgrade pip
-RUN pip3.11 install --upgrade pip
+RUN python3.12 -m pip install --upgrade pip
 
 # Install JupyterLab and Python dependencies using the correct Python version
 COPY ./requirements.txt /tmp/requirements.txt
-RUN pip3.11 install --no-cache-dir -r /tmp/requirements.txt
+RUN python3.12 -m pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Parked
 # pydantic starlette torch torchvision tensorflow transformers scipy statsmodels polars seaborn plotly spacy fastapi mlflow scikit-learn joblib 
@@ -87,5 +88,5 @@ EXPOSE 8501
 EXPOSE 8087
 EXPOSE 8088
 
-# Run JupyterLab with explicit config (password auth from /home/.vncpwd.env)
+# Run JupyterLab with explicit config (password auth from /home/.vncpwd)
 CMD ["jupyter", "lab", "--config=/etc/jupyter/jupyter_lab_config.py", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--custom-css"]
