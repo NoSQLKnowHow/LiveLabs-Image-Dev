@@ -16,31 +16,51 @@ COMPOSE_ENV="$POD_ROOT/.env"
 mkdir -p "$APP_DIR"
 
 
-# clean up existing things
+# Clean up the host OCI CLI configuration before recreating it from the current
+# local fallback values or Terraform instance metadata.
 sudo rm -rf /home/opc/.oci
 
-# (re)create folders
-# mkdir -p "$APP_DIR/.oci"
+# Create the OCI SDK/CLI configuration used by the JupyterLab container.
+if [[ -z "${USER_OCID}" || -z "${PEM_KEY_FINGERPRINT}" || -z "${TENANCY_OCID}" || -z "${REGION_IDENTIFIER}" || -z "${PEM_KEY}" ]]; then
+  echo "OCI user, fingerprint, tenancy, region, or PEM key is empty; cannot create OCI configuration."
+  exit 1
+fi
 
-# #create config
-# echo "[DEFAULT]" > "$APP_DIR/.oci/config"
-# echo "user=${USER_OCID}" >> "$APP_DIR/.oci/config"
-# echo "fingerprint=${PEM_KEY_FINGERPRINT}" >> "$APP_DIR/.oci/config"
-# echo "tenancy=${TENANCY_OCID}" >> "$APP_DIR/.oci/config"
-# echo "region=${REGION_IDENTIFIER}" >> "$APP_DIR/.oci/config"
-# echo "key_file=~/.oci/oci_api_key.pem" >> "$APP_DIR/.oci/config"
+mkdir -p "$APP_DIR/.oci"
 
-# echo -e "$PEM_KEY" > "$APP_DIR/.oci/oci_api_key.pem"
-# chmod 700 "$APP_DIR/.oci"
-# chmod 600 "$APP_DIR/.oci/config" "$APP_DIR/.oci/oci_api_key.pem"
+#create config
+echo "[DEFAULT]" > "$APP_DIR/.oci/config"
+echo "user=${USER_OCID}" >> "$APP_DIR/.oci/config"
+echo "fingerprint=${PEM_KEY_FINGERPRINT}" >> "$APP_DIR/.oci/config"
+echo "tenancy=${TENANCY_OCID}" >> "$APP_DIR/.oci/config"
+echo "region=${REGION_IDENTIFIER}" >> "$APP_DIR/.oci/config"
+echo "key_file=~/.oci/oci_api_key.pem" >> "$APP_DIR/.oci/config"
 
-# # copy keys to ~/.oci/
-# install -d -m 700 /home/opc/.oci
-# install -m 600 "$APP_DIR/.oci/config" /home/opc/.oci/config
-# install -m 600 "$APP_DIR/.oci/oci_api_key.pem" /home/opc/.oci/oci_api_key.pem
+printf '%s\n' "$PEM_KEY" > "$APP_DIR/.oci/oci_api_key.pem"
+chmod 700 "$APP_DIR/.oci"
+chmod 600 "$APP_DIR/.oci/config" "$APP_DIR/.oci/oci_api_key.pem"
 
-# password for JupyterLab
-printf '%s\n' "$vncpwd" > "$APP_DIR/.vncpwd"
+# copy keys to ~/.oci/
+install -d -m 700 /home/opc/.oci
+install -m 600 "$APP_DIR/.oci/config" /home/opc/.oci/config
+install -m 600 "$APP_DIR/.oci/oci_api_key.pem" /home/opc/.oci/oci_api_key.pem
+
+# The password baked into the image is authoritative. The local .env value is
+# used only during the initial setup when .vncpwd does not exist yet.
+if [[ -s "$APP_DIR/.vncpwd" ]]; then
+  IFS= read -r vncpwd < "$APP_DIR/.vncpwd"
+elif [[ -n "${vncpwd:-}" ]]; then
+  printf '%s\n' "$vncpwd" > "$APP_DIR/.vncpwd"
+else
+  echo "Missing JupyterLab password: $APP_DIR/.vncpwd does not exist and no local vncpwd value was provided."
+  exit 1
+fi
+
+if [[ -z "$vncpwd" ]]; then
+  echo "JupyterLab password in $APP_DIR/.vncpwd is empty."
+  exit 1
+fi
+
 printf 'vncpwd=%s\n' "$vncpwd" > "$APP_DIR/.vncpwd.env"
 chmod 600 "$APP_DIR/.vncpwd" "$APP_DIR/.vncpwd.env"
 install -m 600 "$APP_DIR/.vncpwd.env" /home/opc/.vncpwd.env
