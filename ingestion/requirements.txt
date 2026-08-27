@@ -27,12 +27,14 @@ typing_extensions==4.15.0
 # --- LangChain core + integrations (notebook only) -------------------------
 # These are the highest-churn pins in this file. Test the notebook end-to-end
 # after bumping any of them.
+# oracleagentmemory 26.4.0 constrains LiteLLM to 1.83.x, which pins OpenAI 2.30.
+# langchain-openai 1.3.4 is the newest release compatible with that OpenAI pin.
 langchain==1.3.2
-langchain-core==1.4.0
+langchain-core==1.4.9
 langchain-ollama==1.1.0
 langchain-oci
 langchain-oracledb==1.4.0
-langchain-openai==1.3.5
+langchain-openai==1.3.4
 
 # --- LangGraph + Oracle persistence (notebook only) ------------------------
 langgraph==1.2.2
