@@ -13,17 +13,20 @@ if [[ ${#PUBLIC_IP} -le 5 || ${PUBLIC_IP} =~ '<html>' ]]; then
 fi
 
 
-export vncpwd=$(curl -s -H "Authorization: Bearer Oracle" -L http://169.254.169.254/opc/v2/instance/metadata/vncpwd)
+# The JupyterLab password is intentionally not read from OCI metadata. During
+# the initial manual setup, the local .env value seeds the .vncpwd file that is
+# baked into the custom image. On later boots, setenv.sh treats that file as the
+# source of truth.
+export vncpwd="${vncpwdlocal:-${vncpwd:-}}"
 
-if [[ ${#vncpwd} -ne 10 ]]; then
- export vncpwd="${vncpwdlocal:-}"
-fi
 
+DBCONNECTION_FROM_ENV="${DBCONNECTION:-${dbconnectionlocal:-}}"
+DBCONNECTION_FROM_METADATA="$(curl -s -H "Authorization: Bearer Oracle" -L http://169.254.169.254/opc/v2/instance/metadata/dbconnection | tr -d ' ')"
 
-export DBCONNECTION=$(curl -s -H "Authorization: Bearer Oracle" -L http://169.254.169.254/opc/v2/instance/metadata/dbconnection|tr -d ' ')
-
-if [[ ${#DBCONNECTION} -le 5 || ${DBCONNECTION} =~ '<html>' ]]; then
-  export DBCONNECTION="${dbconnectionlocal:-}"
+if [[ ${#DBCONNECTION_FROM_METADATA} -gt 5 && ! ${DBCONNECTION_FROM_METADATA} =~ '<html>' ]]; then
+  export DBCONNECTION="${DBCONNECTION_FROM_METADATA}"
+else
+  export DBCONNECTION="${DBCONNECTION_FROM_ENV}"
 fi
 
 
