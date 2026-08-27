@@ -1,5 +1,5 @@
 [Unit]
-Description=Sync JupyterLab notebooks from GitHub
+Description=Refresh JupyterLab notebooks from Object Storage
 After=network-online.target
 Wants=network-online.target
 Before=user-podman.service
@@ -7,10 +7,8 @@ Before=user-podman.service
 [Service]
 Type=oneshot
 TimeoutStartSec=300
-Environment=JL_NOTEBOOKS_REPO_URL=https://github.com/NoSQLKnowHow/LiveLabs-Image-Dev.git
-Environment=JL_NOTEBOOKS_REPO_REF=main
-Environment=JL_NOTEBOOKS_REPO_PATH=ingestion/jl_notebooks
-Environment=JL_NOTEBOOKS_TARGET_DIR=/home/opc/ingestion/runtime/jl_notebooks
+Environment=JL_NOTEBOOKS_ARCHIVE_URL=https://objectstorage.us-ashburn-1.oraclecloud.com/p/Pg8kffjHaKzjj8pCnMbUaNmik_JBnNO-MXsaIva4iUQBFZK52oLykmY3mIhai9MS/n/axywji1aljc2/b/kirkstorage/o/dev-rel-notebooks.zip
+Environment=JL_NOTEBOOKS_TARGET_DIR=/home/opc/ingestion/jl_notebooks
 ExecStart=/bin/bash /home/opc/init/sync-jl-notebooks.sh
 
 [Install]
