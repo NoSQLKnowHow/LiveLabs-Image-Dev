@@ -19,6 +19,7 @@ ExecStartPre=/usr/local/bin/podman-compose down
 
 # Start the compose app
 ExecStart=/usr/local/bin/podman-compose up
+ExecStop=/usr/local/bin/podman-compose down
 #ExecStart=/usr/bin/podman-compose up
 
 [Install]
