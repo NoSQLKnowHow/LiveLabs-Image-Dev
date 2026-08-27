@@ -1,11 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-REPO_URL="${JL_NOTEBOOKS_REPO_URL:-https://github.com/NoSQLKnowHow/LiveLabs-Image-Dev.git}"
-REPO_REF="${JL_NOTEBOOKS_REPO_REF:-main}"
-REPO_PATH="${JL_NOTEBOOKS_REPO_PATH:-ingestion/jl_notebooks}"
-LOCAL_SOURCE_DIR="${JL_NOTEBOOKS_LOCAL_SOURCE_DIR:-/home/opc/ingestion/jl_notebooks}"
-TARGET_DIR="${JL_NOTEBOOKS_TARGET_DIR:-/home/opc/ingestion/runtime/jl_notebooks}"
+ARCHIVE_URL="${JL_NOTEBOOKS_ARCHIVE_URL:-https://objectstorage.us-ashburn-1.oraclecloud.com/p/Pg8kffjHaKzjj8pCnMbUaNmik_JBnNO-MXsaIva4iUQBFZK52oLykmY3mIhai9MS/n/axywji1aljc2/b/kirkstorage/o/dev-rel-notebooks.zip}"
+TARGET_DIR="${JL_NOTEBOOKS_TARGET_DIR:-/home/opc/ingestion/jl_notebooks}"
+DOWNLOAD_SCRIPT_SOURCE="${JL_NOTEBOOKS_DOWNLOAD_SCRIPT_SOURCE:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/download-notebooks.sh}"
+MAX_ATTEMPTS=3
+DOWNLOAD_TIMEOUT_SECONDS=15
+RETRY_DELAY_SECONDS=1
 
 TMP_DIR="$(mktemp -d)"
 cleanup() {
@@ -13,34 +14,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$TARGET_DIR"
-
-copy_notebook_files() {
-  local source_dir="$1"
-  local source_label="$2"
-  local copied=0
-
-  if [[ ! -d "$source_dir" ]]; then
-    echo "Skipping $source_label notebooks; source directory not found: $source_dir"
-    return 1
-  fi
-
-  while IFS= read -r -d '' src_file; do
-    rel_path="${src_file#"$source_dir"/}"
-    mkdir -p "$TARGET_DIR/$(dirname "$rel_path")"
-    cp "$src_file" "$TARGET_DIR/$rel_path"
-    copied=$((copied + 1))
-  done < <(
-    find "$source_dir" -type f \( -name '*.sql' -o -name '*.ipynb' -o -name '*.json' -o -name '*.svg' \) -print0
-  )
-
-  if [[ "$copied" -eq 0 ]]; then
-    echo "No .sql, .ipynb, .json, or .svg files found in $source_label source: $source_dir"
-    return 1
-  fi
-
-  echo "Copied $copied $source_label notebook/data file(s) into $TARGET_DIR"
-  return 0
+clear_target() {
+  mkdir -p "$TARGET_DIR"
+  find "$TARGET_DIR" -mindepth 1 -depth -delete
 }
 
 apply_permissions() {
@@ -48,44 +24,60 @@ apply_permissions() {
   find "$TARGET_DIR" -type f -exec chmod 0664 {} +
 }
 
-synced_any=0
+install_manual_download_script() {
+  local reason="$1"
+  mkdir -p "$TARGET_DIR"
+  install -m 0755 "$DOWNLOAD_SCRIPT_SOURCE" "$TARGET_DIR/download-notebooks.sh"
+  rm -f "$TARGET_DIR/download-notebooks.md"
+  echo "$reason"
+  echo "Manual notebook download script installed at $TARGET_DIR/download-notebooks.sh"
+  exit 0
+}
 
-if copy_notebook_files "$LOCAL_SOURCE_DIR" "local packaged"; then
-  synced_any=1
-fi
+ARCHIVE_PATH="$TMP_DIR/notebooks.zip"
+STAGING_DIR="$TMP_DIR/notebooks"
 
-if command -v git >/dev/null 2>&1; then
-  if git clone \
-    --depth 1 \
-    --single-branch \
-    --branch "$REPO_REF" \
-    --filter=blob:none \
-    --sparse \
-    "$REPO_URL" \
-    "$TMP_DIR/repo"; then
-
-    if git -C "$TMP_DIR/repo" sparse-checkout set "$REPO_PATH"; then
-      SOURCE_DIR="$TMP_DIR/repo/$REPO_PATH"
-      if copy_notebook_files "$SOURCE_DIR" "GitHub"; then
-        synced_any=1
-      else
-        echo "GitHub checkout did not provide usable notebook files; keeping local packaged files."
-      fi
-    else
-      echo "GitHub sparse checkout failed; keeping local packaged files."
+download_archive() {
+  local attempt
+  for ((attempt = 1; attempt <= MAX_ATTEMPTS; attempt++)); do
+    if curl --fail --location --connect-timeout "$DOWNLOAD_TIMEOUT_SECONDS" \
+      --max-time "$DOWNLOAD_TIMEOUT_SECONDS" \
+      --output "$ARCHIVE_PATH" "$ARCHIVE_URL"; then
+      return 0
     fi
-  else
-    echo "GitHub clone failed; keeping local packaged files."
-  fi
-else
-  echo "git is not installed; keeping local packaged files."
+    echo "Notebook archive download attempt ${attempt}/${MAX_ATTEMPTS} failed."
+    if ((attempt < MAX_ATTEMPTS)); then
+      sleep "$RETRY_DELAY_SECONDS"
+    fi
+  done
+  return 1
+}
+
+if ! download_archive; then
+  install_manual_download_script "Notebook archive download failed: $ARCHIVE_URL"
 fi
 
+if ! unzip -tqq "$ARCHIVE_PATH"; then
+  install_manual_download_script "Notebook archive validation failed: $ARCHIVE_URL"
+fi
+
+if unzip -Z1 "$ARCHIVE_PATH" | grep -Eq '(^/|(^|/)\.\.(/|$))'; then
+  install_manual_download_script "Notebook archive contains an unsafe path: $ARCHIVE_URL"
+fi
+
+mkdir -p "$STAGING_DIR"
+if ! unzip -q "$ARCHIVE_PATH" -d "$STAGING_DIR"; then
+  install_manual_download_script "Notebook archive extraction failed: $ARCHIVE_URL"
+fi
+
+if ! find "$STAGING_DIR" -type f -print -quit | grep -q .; then
+  install_manual_download_script "Notebook archive is empty: $ARCHIVE_URL"
+fi
+
+clear_target
+cp -a "$STAGING_DIR"/. "$TARGET_DIR"/
+install -m 0755 "$DOWNLOAD_SCRIPT_SOURCE" "$TARGET_DIR/download-notebooks.sh"
 apply_permissions
+chmod 0755 "$TARGET_DIR/download-notebooks.sh"
 
-if [[ "$synced_any" -eq 0 ]]; then
-  echo "No JupyterLab notebooks were copied from local package or GitHub."
-  exit 1
-fi
-
-echo "JupyterLab notebooks are ready in $TARGET_DIR"
+echo "JupyterLab notebooks refreshed from Object Storage into $TARGET_DIR"
