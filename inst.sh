@@ -91,16 +91,15 @@ unzip -oq /home/opc/build_dev.zip -d /home/opc/ && rm /home/opc/build_dev.zip
 cp /home/opc/init/user-podman.service /home/opc/.config/systemd/user/.
 cp /home/opc/init/sync-jl-notebooks.service /home/opc/.config/systemd/user/.
 chmod +x /home/opc/init/sync-jl-notebooks.sh
+chmod +x /home/opc/init/download-notebooks.sh
 ##########
 
 mkdir -p /home/opc/ingestion/oradata
 mkdir -p /home/opc/ingestion/dmdump
-mkdir -p /home/opc/ingestion/runtime/jl_notebooks
 
 chmod 700 /home/opc/ingestion/oradata
 chmod 700 /home/opc/ingestion/dmdump
 chmod 775 /home/opc/ingestion/runtime
-chmod 775 /home/opc/ingestion/runtime/jl_notebooks
 
 # Try to source in the .env, if it is there, also log into the oracle image registry.
 if [[ -f /home/opc/.env ]]; then
