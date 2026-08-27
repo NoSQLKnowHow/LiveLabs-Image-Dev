@@ -129,8 +129,9 @@ declare
 begin
   select count(*)
     into l_model_count
-    from user_mining_models
-   where model_name = '${MODEL_NAME_UPPER}';
+    from dba_mining_models
+   where owner = '${APP_USER}'
+     and model_name = '${MODEL_NAME_UPPER}';
 
   if l_model_count = 0 then
     dbms_vector.load_onnx_model(

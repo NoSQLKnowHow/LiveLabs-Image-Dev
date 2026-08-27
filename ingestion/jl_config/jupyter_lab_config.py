@@ -1,15 +1,15 @@
-import os
+from pathlib import Path
+
 from jupyter_server.auth import passwd
-from dotenv import load_dotenv
 
-load_dotenv(dotenv_path="/home/.vncpwd.env")
+vncpwd_file = Path("/home/.vncpwd")
+try:
+    vncpwd = vncpwd_file.read_text(encoding="utf-8").rstrip("\r\n")
+except OSError as exc:
+    raise RuntimeError(f"Cannot read JupyterLab password from {vncpwd_file}.") from exc
 
-
-# vncpwd = "${vncpwd}"
-
-vncpwd = os.getenv("vncpwd")
 if not vncpwd:
-    raise RuntimeError("Missing vncpwd in /home/.vncpwd.env; refusing to start Jupyter without password auth.")
+    raise RuntimeError(f"JupyterLab password in {vncpwd_file} is empty.")
 
 hash = passwd(vncpwd)
 
@@ -26,7 +26,7 @@ c.ServerApp.allow_root = True
 # Listen on all IP addresses
 c.ServerApp.ip = "0.0.0.0"
 
-# Disable authentication token and use a password
+# Disable authentication token and use the password from /home/.vncpwd
 c.ServerApp.open_browser = False
 
 # Optional: Set a specific working directory
