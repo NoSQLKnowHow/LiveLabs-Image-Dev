@@ -51,25 +51,46 @@ services:
     container_name: adbfree
     hostname: adbfree
     environment:
-      - ORACLE_PWD=${ORACLE_PWD}
+      WORKLOAD_TYPE: ${WORKLOAD_TYPE:-ATP}
+      DATABASE_NAME: ${DATABASE_NAME:-MYATP}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-${ORACLE_PWD}}
+      WALLET_PASSWORD: ${WALLET_PASSWORD:-${ORACLE_PWD}}
+      ENABLE_ARCHIVE_LOG: ${ENABLE_ARCHIVE_LOG:-true}
+      # Compatibility variables for the current database bootstrap scripts.
+      ORACLE_PWD: ${ORACLE_PWD:-}
+      APP_DB_ADMIN_PWD: ${APP_DB_ADMIN_PWD:-${ORACLE_PWD}}
+      PRISM_DATA_DIR: /opt/oracle/scripts/setup/data
     ports:
       - "1521:1521"
+      - "1522:1522"
+      - "8443:8443"
+      - "27017:27017"
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - "/dev/fuse:/dev/fuse"
     volumes:
-      - "./oradata:/opt/oracle/oradata:Z,U"
-      - "./db-startup:/opt/oracle/scripts/setup:Z"
-      - "./dmdump:/opt/oracle/dmdump:Z,U"
-    restart: always
+      - "adb_data:/u01/data:Z"
+      - "./db-startup:/opt/oracle/scripts/setup:ro,Z"
+      - "adb_model_data:/opt/oracle/dmdump:Z,U"
+    restart: unless-stopped
 
   web:
     image: nginx:stable-alpine3
     container_name: web-proxy
     hostname: proxy
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "80:80"
-    environment:
-      - NGINX_PORT=80
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  adb_data:
+  adb_model_data:
 #   langfuse-worker:
 #     image: docker.langfuse.com/langfuse/langfuse-worker:4
 #     restart: always
