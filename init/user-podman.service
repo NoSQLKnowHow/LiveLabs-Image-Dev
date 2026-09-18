@@ -12,14 +12,16 @@ TimeoutStartSec=420
 TimeoutStopSec=420
 WorkingDirectory=/home/opc/ingestion
 
-ExecStartPre=/bin/bash -c '/home/opc/init/setenv.sh'
+ExecStartPre=/bin/bash -c 'install -d -m 0700 /home/opc/ingestion/runtime/logs'
+ExecStartPre=/bin/bash -c '/home/opc/init/setenv.sh >> /home/opc/ingestion/runtime/logs/podman-compose.log 2>&1'
 
-ExecStartPre=/usr/local/bin/podman-compose down
+ExecStartPre=/bin/bash -c '/usr/local/bin/podman-compose down >> /home/opc/ingestion/runtime/logs/podman-compose.log 2>&1'
 #ExecStartPre=/usr/bin/podman-compose down
 
-# Start the compose app
-ExecStart=/usr/local/bin/podman-compose up
-ExecStop=/usr/local/bin/podman-compose down
+# Start the compose app. Keep a durable log in addition to the user journal,
+# including database-container initialization output.
+ExecStart=/bin/bash -c 'install -d -m 0700 /home/opc/ingestion/runtime/logs; printf "\n===== podman-compose run started %s =====\n" "$$(date --iso-8601=seconds)" >> /home/opc/ingestion/runtime/logs/podman-compose.log; exec /usr/local/bin/podman-compose up >> /home/opc/ingestion/runtime/logs/podman-compose.log 2>&1'
+ExecStop=/bin/bash -c '/usr/local/bin/podman-compose down >> /home/opc/ingestion/runtime/logs/podman-compose.log 2>&1'
 #ExecStart=/usr/bin/podman-compose up
 
 [Install]

@@ -3,6 +3,8 @@ set -euo pipefail
 
 ADMIN_USER="${APP_DB_ADMIN_USER:-ADMIN}"
 ADMIN_PWD="${APP_DB_ADMIN_PWD:-${ORACLE_PWD:-Welcome202626ai}}"
+SELECTAI_LAB_USER="${SELECTAI_DB_USER:-SELECTAI_LAB}"
+SELECTAI_LAB_PWD="${SELECTAI_DB_PASSWORD:-${APP_DB_ADMIN_PWD:-${ORACLE_PWD:-Welcome202626ai}}}"
 MODEL_NAME="${DB_ONNX_MODEL_NAME:-ALL_MINILM_L12_V2}"
 MODEL_FILE="${DB_ONNX_MODEL_FILE:-all_MiniLM_L12_v2.onnx}"
 MODEL_URL="${DB_ONNX_MODEL_URL:-https://adwc4pm.objectstorage.us-ashburn-1.oci.customer-oci.com/p/iPX9W0MZeRkwJKWdFmdJCemmN-iKAl_bFvNGYLW7YqIrw4kKsukL24J2q93Beb9S/n/adwc4pm/b/OML-ai-models/o/all_MiniLM_L12_v2.onnx}"
@@ -12,13 +14,25 @@ if [[ -z "${ADMIN_PWD}" ]]; then
   exit 1
 fi
 
+if [[ -z "${SELECTAI_LAB_PWD}" ]]; then
+  echo "SELECTAI_DB_PASSWORD, APP_DB_ADMIN_PWD, and ORACLE_PWD are all empty; cannot provision ${SELECTAI_LAB_USER}."
+  exit 1
+fi
+
 if [[ ! "${ADMIN_USER}" =~ ^[A-Za-z][A-Za-z0-9_$#]*$ ]]; then
   echo "Invalid APP_DB_ADMIN_USER value: ${ADMIN_USER}"
   exit 1
 fi
 
+if [[ ! "${SELECTAI_LAB_USER}" =~ ^[A-Za-z][A-Za-z0-9_$#]*$ ]]; then
+  echo "Invalid SELECTAI_DB_USER value: ${SELECTAI_LAB_USER}"
+  exit 1
+fi
+
 ADMIN_USER_UPPER="$(echo "${ADMIN_USER}" | tr '[:lower:]' '[:upper:]')"
 ADMIN_PWD_ESCAPED="${ADMIN_PWD//\"/\"\"}"
+SELECTAI_LAB_USER_UPPER="$(echo "${SELECTAI_LAB_USER}" | tr '[:lower:]' '[:upper:]')"
+SELECTAI_LAB_PWD_ESCAPED="${SELECTAI_LAB_PWD//\"/\"\"}"
 MODEL_NAME_UPPER="$(echo "${MODEL_NAME}" | tr '[:lower:]' '[:upper:]')"
 MODEL_PATH="/opt/oracle/dmdump/${MODEL_FILE}"
 APP_USER="$(echo "prism" | tr '[:lower:]' '[:upper:]')"
@@ -97,7 +111,50 @@ begin
 end;
 /
 
+-- Create the Select AI lab schema before its numbered provisioning script runs.
+declare
+  l_user_count number := 0;
+begin
+  select count(*)
+    into l_user_count
+    from dba_users
+   where username = '${SELECTAI_LAB_USER_UPPER}';
+
+  if l_user_count = 0 then
+    execute immediate 'create user ${SELECTAI_LAB_USER_UPPER} identified by "${SELECTAI_LAB_PWD_ESCAPED}" default tablespace users temporary tablespace temp';
+    dbms_output.put_line('Created Select AI lab schema ${SELECTAI_LAB_USER_UPPER}.');
+  end if;
+end;
+/
+
+alter user ${SELECTAI_LAB_USER_UPPER} identified by "${SELECTAI_LAB_PWD_ESCAPED}" account unlock;
+
 create or replace directory DM_DUMP as '/opt/oracle/dmdump';
+
+-- Give the Select AI lab schema the same baseline privileges as APP_USER.
+GRANT CREATE SESSION TO ${SELECTAI_LAB_USER_UPPER};
+GRANT UNLIMITED TABLESPACE TO ${SELECTAI_LAB_USER_UPPER};
+GRANT CONNECT, RESOURCE TO ${SELECTAI_LAB_USER_UPPER};
+GRANT CREATE TABLE TO ${SELECTAI_LAB_USER_UPPER};
+GRANT CREATE VIEW TO ${SELECTAI_LAB_USER_UPPER};
+GRANT CREATE SEQUENCE TO ${SELECTAI_LAB_USER_UPPER};
+GRANT CREATE PROCEDURE TO ${SELECTAI_LAB_USER_UPPER};
+GRANT CREATE TYPE TO ${SELECTAI_LAB_USER_UPPER};
+ALTER USER ${SELECTAI_LAB_USER_UPPER} QUOTA UNLIMITED ON users;
+
+GRANT CREATE PROPERTY GRAPH TO ${SELECTAI_LAB_USER_UPPER};
+
+GRANT CREATE MINING MODEL TO ${SELECTAI_LAB_USER_UPPER};
+GRANT DB_DEVELOPER_ROLE TO ${SELECTAI_LAB_USER_UPPER};
+
+GRANT EXECUTE ON DBMS_VECTOR TO ${SELECTAI_LAB_USER_UPPER};
+GRANT EXECUTE ON DBMS_VECTOR_CHAIN TO ${SELECTAI_LAB_USER_UPPER};
+GRANT READ, WRITE ON DIRECTORY DM_DUMP TO ${SELECTAI_LAB_USER_UPPER};
+
+-- Select AI uses the ONNX model owned by APP_USER through a fully qualified
+-- model name. These privileges are required for cross-schema Select AI models.
+GRANT CREATE ANY MINING MODEL TO ${SELECTAI_LAB_USER_UPPER};
+GRANT SELECT ANY MINING MODEL TO ${SELECTAI_LAB_USER_UPPER};
 
 ALTER USER ${APP_USER} IDENTIFIED BY "${ADMIN_PWD_ESCAPED}" ACCOUNT UNLOCK;
 GRANT CREATE SESSION TO ${APP_USER};
@@ -147,7 +204,9 @@ begin
 end;
 /
 
+GRANT SELECT ON MINING MODEL ${APP_USER}.${MODEL_NAME_UPPER} TO ${SELECTAI_LAB_USER_UPPER};
+
 exit;
 SQL
 
-echo "Provisioning complete: ${ADMIN_USER_UPPER} has DBA privileges and model ${MODEL_NAME_UPPER} is available."
+echo "Provisioning complete: ${ADMIN_USER_UPPER} has DBA privileges, ${SELECTAI_LAB_USER_UPPER} exists, and model ${MODEL_NAME_UPPER} is available."

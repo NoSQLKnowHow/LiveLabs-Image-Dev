@@ -5,3 +5,4 @@ build_dev.zip
 */.DS_Store
 workshop-master.zip
 ingestion/jl_notebooks/dev-rel-notebooks.zip
+zipup.sh
