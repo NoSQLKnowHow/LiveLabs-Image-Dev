@@ -4,6 +4,14 @@ This repo contains the code to create the "golden master" image for the Develope
 
 This page will ultimately include the steps to update and build a new image when that time comes.
 
+## Agent Memory 26.8 workshop
+
+The new [Agent Memory zero-to-hero lab](ingestion/jl_notebooks/agent_memory_zero_to_hero/README.md)
+provides matching student and complete Ollama notebooks for an enterprise
+incident-handover assistant, with database-resident embedding/reranking and
+Deep Data Security. It uses a separate kernel and opt-in database provisioning;
+see its prerequisites before running it on the existing workshop image.
+
 ## Python libraries
 The list of Python libraries is in requirements.txt with all versions set to static versions where possible, i.e., nothing is set to "latest". This is intended to avoid conflicts and potential problems in the future.
 

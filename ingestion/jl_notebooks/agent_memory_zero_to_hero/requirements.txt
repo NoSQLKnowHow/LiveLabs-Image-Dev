@@ -1,0 +1,8 @@
+# A separate kernel: do not upgrade the image's OAMP 26.4 environment in place.
+oracleagentmemory==26.8.0
+oracledb==4.0.2
+httpx==0.28.1
+ipykernel==6.30.1
+nbformat==5.10.4
+langchain==1.4.0
+langchain-ollama==1.1.0
