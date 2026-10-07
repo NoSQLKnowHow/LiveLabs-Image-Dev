@@ -9,7 +9,7 @@ This page will ultimately include the steps to update and build a new image when
 The new [Agent Memory: Introduction to context and memory engineering lab](ingestion/jl_notebooks/agent_memory_zero_to_hero/README.md)
 provides matching student and complete Ollama notebooks for an enterprise
 incident-handover assistant, with database-resident embedding/reranking and
-Deep Data Security. It uses a separate kernel and opt-in database provisioning;
+a single workshop schema. It uses a separate kernel and opt-in database provisioning;
 see its prerequisites before running it on the existing workshop image.
 
 ## Python libraries

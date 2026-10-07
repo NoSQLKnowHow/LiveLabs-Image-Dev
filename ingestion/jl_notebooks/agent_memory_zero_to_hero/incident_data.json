@@ -9,7 +9,7 @@
   ],
   "alice_note": "INC-2042: checkout-api exhausted its database connection pool after release 7.18. Initial pool cap was 20. Change CHG-884 is awaiting incident-commander approval. I prefer handovers with impact, evidence, and the next owner.",
   "alice_update": "INC-2042 update: the incident commander approved CHG-884. The checkout-api pool cap is now 40, replacing 20. The error rate is back below one percent. No database restart was performed.",
-  "bob_note": "INC-3051: payroll-api has a private vendor escalation, case PAY-771. This note belongs only to the payroll responder. Do not include PAY-771 in checkout-api handovers.",
+  "bob_note": "INC-3051: payroll-api has a separate vendor escalation, case PAY-771. This synthetic note is scoped to the payroll responder. Do not include PAY-771 in checkout-api handovers.",
   "evaluation": [
     {"query": "What must we check before changing the checkout connection pool limit?", "expected": "pool"},
     {"query": "Who must approve rolling back the application and what checks follow?", "expected": "rollback"},
