@@ -1,4 +1,4 @@
-# Agent Memory: zero to hero with Ollama
+# Agent Memory: Introduction to context and memory engineering
 
 Build a memory-aware incident-handover assistant for enterprise platform teams.
 Alice handles a checkout incident; Bob handles a separate payroll incident.
@@ -10,6 +10,12 @@ exercises or [notebook_complete_ollama.ipynb](notebook_complete_ollama.ipynb)
 for the worked solution. They have matching cell IDs, exercise prompts and
 checkpoints. Teaching cells are capped at 24 lines. Allow 120–150 minutes;
 local model speed affects extraction and generation time.
+
+Both notebooks include the reference architecture near the start, explanations
+of the engineering choices, and section-level key-takeaway callouts. The diagram
+is embedded for offline rendering; [reference_architecture.svg](reference_architecture.svg)
+is the editable source. Supporting Python is included in short provided cells,
+so neither edition imports a separate lab helper module.
 
 ## Alignment with the hosted session
 
@@ -164,18 +170,12 @@ than repeatedly executing write cells. Cleanup deletes only the two threads
 created by the current run. Shared runbooks expire under the 30-day retention
 policy; an instructor manages store/identity teardown separately.
 
-## Validation and PR review
+## Before hosting the session
 
-```bash
-.venv/bin/python validate_notebooks.py
-.venv/bin/python -m unittest discover -s tests -v
-```
-
-Static validation checks notebook format, syntax (including top-level await),
-empty outputs, short cells, student/solution parity, and required 26.8 APIs.
-Unit tests cover the reranker contract, bound SQL inputs, security-context
-cleanup and rejection of unrelated failures in isolation checks. These checks
-do **not** establish live database security or model quality.
+The notebooks are self-contained apart from the fixture, dependencies and
+provisioned services. The separate test suite, helper module, validator and their
+CI workflow are not part of this workshop. Keep the in-notebook checkpoints:
+they help students distinguish successful operations from misleading results.
 
 For integration acceptance, execute the complete notebook on the provisioned
 stack from a fresh kernel. Require model preflight, private-record readback,
