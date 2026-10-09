@@ -131,18 +131,31 @@ and output rather than treating successful execution as proof of correctness.
 
 | Capability | Visible outcome |
 |---|---|
-| Background extraction | Save messages, wait for work and inspect typed memories |
+| Background extraction | Check SDK errors and unsuccessful operations, then require fresh memories for each ingestion |
 | Post-extraction linking | Separate inferred relationships from explicit review |
 | Memory evolution and graph search | Current approval supersedes a historical proposal |
 | Structured message content | Read `TextContent.text` to recover source messages |
 | Record/thread listing | Show stored procedures and recover a conversation |
 | Bounded vector retrieval | Preserve returned order in pandas tables |
 | LLM pruning | Compare returned evidence with the unpruned result |
-| Context cards and summaries | Assemble a bounded next-turn view with source references |
+| Context cards and summaries | Budget relevant records separately from the rest of the card and final prompt |
 | Observability | Count operation events without recording private content |
 | Retention and cleanup | Contrast expiration with removal of scoped live rows |
 
 ## Boundaries and lifecycle
+
+Background waits include failed jobs. The notebook's per-note checkpoint watches
+SDK error logs and unsuccessful API completion events, and requires memories
+carrying a new `capture_id` and a `capture_step` label. Earlier records cannot
+satisfy a later ingestion check. The listener and error handler are removed even
+on exceptions. These are local processing checks, not a distributed job-status
+service or proof that extracted claims are true. Failed ingestion can leave a
+stored source message or partial records.
+
+For context cards, `token_budget=1600` limits the estimated tokens of formatted
+relevant records only. Recent messages, summary context, instructions, the
+question and the answer allowance need additional space in the model's context
+window; the complete card or final prompt can exceed 1,600 tokens.
 
 Alice and Bob are application labels, not database identities. Both clients use
 one dedicated account. Their user/thread filters select evidence; they do not
@@ -174,22 +187,29 @@ the configuration cell rather than regenerating `RUN_ID` midway through a case.
 
 ## Execution record
 
-An earlier local rehearsal of the LiveLabs-focused complete notebook executed
-**77 of 77 code cells without exceptions** on 8 October 2026, run `1e72bdac3d`.
-The observations below describe that rehearsal, not a fresh execution of this
-PR snapshot. The current `notebook_complete_ollama.ipynb` has saved execution
-counts for **19 of 77 code cells** and no saved error outputs; it is not a complete
-capture of the earlier run. Existing outputs remain in that notebook. The student
-notebook retains empty outputs and there is no separate executed notebook.
+The complete notebook executed **80 of 80 code cells without cell exceptions**
+from a fresh kernel on 9 October 2026, run `22d0a021ed`. All execution counts and
+actual outputs are saved in `notebook_complete_ollama.ipynb`. The student notebook
+retains empty outputs and there is no separate executed notebook.
 
-Separate seed-cell checks replayed the reported run twice with zero inserts
-and unchanged records. A temporary partial seed with one existing procedure
+Focused checks verified that the ingestion checkpoint rejects a timeout, a
+logged background error and an empty extraction even when older memories exist.
+A real SDK check used a deliberately unavailable model to trigger a provider
+failure: the failed-operation event was detected, and the earlier memory could
+not make the new ingestion pass. Only that check's temporary thread and synthetic
+records were removed afterward.
+
+The local runner reported a macOS process-inspection permission warning during
+kernel shutdown, after all cells completed. It did not prevent output saving;
+there are no notebook error outputs.
+
+Earlier separate seed-cell checks replayed the reported duplicate-ID run twice
+with zero inserts and unchanged records. A temporary partial seed with one existing procedure
 added exactly three missing procedures; another replay added none. Only those
 temporary check records were removed afterward; existing learner records stayed intact.
 
-This run used the same Python environment as the reported failure, with
-LiteLLM 1.100.0 and the corrected provider-body setting. It used
-Qwen3.5 9B through Ollama 0.40.0, OAMP 26.8.0,
+This execution used Python 3.13, LiteLLM 1.104.0 and the corrected provider-body
+setting. It used Qwen3.5 9B through Ollama 0.40.0, OAMP 26.8.0,
 Oracle AI Database Free 23.26.2.0.0 and `AGENT.ALL_MINILM_L12_V2` for
 in-database embeddings. The model digest was
 `d63f830f28d515fefea546f213fca7a75e9dd5176ef51a6deabc952d1c99a911`.
@@ -198,11 +218,12 @@ in-database embeddings. The model digest was
 |---|---|
 | Compatible API and structured output | Both succeeded from the fresh kernel |
 | Memory aware agent and fresh-session recall | Both answered 120 approved under PO-1048, no supplier order submitted |
+| Per-ingestion extraction checkpoints | Persisted three proposal candidates and two approval candidates with distinct capture IDs; both checks passed without reported SDK failures |
 | Extraction and summary | Captured 80 proposed versus 120 approved, with no order submitted; the automatically extracted old proposal was invalid in this run, while the explicit reviewed pair independently demonstrates supersession |
 | Linked history table | Displayed the valid 120-unit approval, its supersedes relationship and the invalid historical 80-unit proposal |
 | Procedure vector search | The expected procedure appeared in the first three results for all three sample questions |
-| Full handover draft | Preserved 120 approved under PO-1048 and no order submitted; left the action owner unconfirmed and identified missing stock-level and supplier-contact information |
-| Bare model without evidence | Made unsupported status claims; the supplied-context comparison remains important |
+| Full handover draft | Preserved 120 approved under PO-1048 and no order submitted; left the action owner unconfirmed and identified missing stock level, supplier ETA and submission timing |
+| Bare model and transient agent without case evidence | Both answered unknown rather than inventing the quantity, approval request or order status |
 | Human approval gate | Blocked the unapproved write and declined the optional save; the approved branch was not exercised |
 | Procedural recall | Returned the reviewed checklist in the later session without copying PO-1048 |
 | Cleanup | Both current run threads had zero remaining thread, message, memory and chunk rows |
