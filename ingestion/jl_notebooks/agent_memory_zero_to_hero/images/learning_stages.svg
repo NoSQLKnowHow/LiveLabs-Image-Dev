@@ -48,7 +48,7 @@
   <rect x="420" y="253" width="285" height="103" rx="10" class="node"/><use href="#context" x="435" y="267" class="icon"/>
   <text x="481" y="289" class="heading">Working context</text><text x="438" y="319" class="body">Instructions + notes + question</text><text x="438" y="342" class="small">Content of this request only</text>
   <rect x="850" y="253" width="250" height="103" rx="10" class="model"/><use href="#chip" x="865" y="267" class="icon"/>
-  <text x="911" y="289" class="heading">Ollama / Qwen</text><text x="868" y="319" class="body">Generate from messages</text><text x="868" y="342" class="small">Unchanged model weights</text>
+  <text x="911" y="289" class="heading">Ollama / Llama</text><text x="868" y="319" class="body">Generate from messages</text><text x="868" y="342" class="small">Unchanged model weights</text>
   <rect x="1185" y="253" width="200" height="103" rx="10" class="memory"/>
   <text x="1203" y="289" class="heading">Answer</text><text x="1203" y="319" class="body">120 approved</text><text x="1203" y="342" class="small">No order submitted</text>
   <path d="M310 308H420" class="flow"/><text x="365" y="280" class="label">question</text><text x="365" y="298" class="label">+ notes</text>
@@ -82,7 +82,7 @@
   <rect x="555" y="820" width="320" height="105" rx="10" class="node"/><use href="#loop" x="572" y="835" class="icon"/>
   <text x="620" y="858" class="heading">LangChain agent loop</text><text x="573" y="887" class="body">create_agent → ainvoke</text><text x="573" y="911" class="small">Choose → execute → observe → repeat</text>
   <rect x="1065" y="820" width="300" height="105" rx="10" class="model"/><use href="#chip" x="1082" y="835" class="icon"/>
-  <text x="1130" y="858" class="heading">Ollama / Qwen</text><text x="1083" y="887" class="body">ChatOllama · native chat API</text><text x="1083" y="911" class="small">Proposes a tool call or final answer</text>
+  <text x="1130" y="858" class="heading">Ollama / Llama</text><text x="1083" y="887" class="body">ChatOllama · native chat API</text><text x="1083" y="911" class="small">Proposes a tool call or final answer</text>
   <path d="M385 867H555" class="flow"/><text x="470" y="857" class="label">messages</text>
   <path d="M875 849H1065" class="flow"/><text x="970" y="820" class="label">context +</text><text x="970" y="838" class="label">tool schemas</text>
   <path d="M1065 903H875" class="flow return"/><text x="970" y="891" class="label">call / final text</text>

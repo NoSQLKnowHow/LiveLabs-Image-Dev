@@ -74,8 +74,9 @@ The LiveLabs image and launch instructions must provide:
   langchain-ollama 1.1.0 and pandas 2.3.3.
 - A dedicated Oracle workshop account and an imported 384-dimensional
   embedding model with a 256-token input limit.
-- Ollama serving `qwen3.5:9b` through both its native API and compatible
-  `/v1` API, with an 8,192-token server context and sufficient inference memory.
+- Ollama serving `llama3.2` (the default 3B model) through both its native API
+  and compatible `/v1` API, with an 8,192-token server context and sufficient
+  inference memory.
 
 This is the delivery contract for the hosted workshop, not a claim that the
 notebook provisions those services. The local execution record below verifies
@@ -94,7 +95,7 @@ credentials out of notebook source and outputs.
 | `ZH_DB_DSN` | Database host, port and service; default `aidbfree:1521/FREEPDB1` |
 | `ZH_EMBED_MODEL` | Imported model; default `PRISM.ALL_MINILM_L12_V2` |
 | `OLLAMA_BASE_URL` | Supplied model-service URL; default `http://localhost:11434` |
-| `OLLAMA_MODEL` | Default `qwen3.5:9b` |
+| `OLLAMA_MODEL` | Default `llama3.2` |
 | `ZH_DECLINE_HANDOVER` | `1` declines the optional save during unattended execution |
 
 On a hosted notebook, `localhost` means the notebook server, not the learner's
@@ -106,17 +107,17 @@ workshop table names in the connected account and bind record/thread IDs.
 
 ### Model-client compatibility
 
-LangChain uses `reasoning=False`. OAMP passes
-`extra_body={"reasoning_effort": "none"}` to Ollama's compatible endpoint.
-Both request non-thinking output and cap generated responses at 2,048 tokens.
-LangChain also sends `num_ctx=8192`; OAMP uses the server's context setting.
+Both clients use `llama3.2`, with temperature 0.7, top-p 0.8 and a maximum
+generated response of 2,048 tokens. LangChain sends `num_ctx=8192`; OAMP uses
+the server's context setting. No thinking-mode parameters are sent for this
+model. Changing the model means checking native chat, tool calls and the
+compatible API's structured output, not just whether the model loads.
 
-The reported structured-request failure was reproduced in the selected
-Python environment with LiteLLM **1.100.0**: its parameter validation rejected
-top-level `reasoning_effort` for `openai/qwen3.5:9b` before contacting Ollama.
-The earlier successful rehearsal used LiteLLM **1.104.0**. Passing the option
-through `extra_body` succeeded with the same model and server in 1.100.0;
-no package upgrade or global parameter-dropping switch was needed.
+The previous Qwen configuration used client-specific thinking controls.
+Those controls have been removed for Llama 3.2; the prompts, sampling settings,
+database embedding model and memory workflow remain the same for comparison.
+An explicit `OLLAMA_MODEL` environment setting or `.env` entry overrides the
+notebook default, so confirm the printed model name when you run the lab.
 
 OAMP uses `trust_env=False` for the workshop's direct connection. This does
 not disable TLS verification. A hosted deployment requiring a proxy or
@@ -185,52 +186,64 @@ This protects sequential cell reruns, not concurrent writers, and does not make
 every other write cell restartable. For a fresh full lab run, start again from
 the configuration cell rather than regenerating `RUN_ID` midway through a case.
 
-## Execution record
+## Execution record and model comparison
 
-The complete notebook executed **80 of 80 code cells without cell exceptions**
-from a fresh kernel on 9 October 2026, run `22d0a021ed`. All execution counts and
-actual outputs are saved in `notebook_complete_ollama.ipynb`. The student notebook
-retains empty outputs and there is no separate executed notebook.
+The Llama 3.2 complete notebook executed **80 of 80 code cells without cell
+exceptions** from a fresh kernel on 9 October 2026, run `3738399430`, in about
+91 seconds (excluding the model download). Its actual outputs are saved in
+`notebook_complete_ollama.ipynb`; the student notebook has empty outputs.
+There is no separate executed notebook.
 
-Focused checks verified that the ingestion checkpoint rejects a timeout, a
-logged background error and an empty extraction even when older memories exist.
-A real SDK check used a deliberately unavailable model to trigger a provider
-failure: the failed-operation event was detected, and the earlier memory could
-not make the new ingestion pass. Only that check's temporary thread and synthetic
-records were removed afterward.
+**The core inventory answer matched the previous Qwen run, but overall output
+quality did not.** The comparison kept the case, prompts, sampling settings,
+database embeddings and memory workflow unchanged. Only the selected model and
+its client-specific thinking controls changed. These are two local observations,
+not a controlled quality benchmark or a guarantee of repeatability.
 
-The local runner reported a macOS process-inspection permission warning during
-kernel shutdown, after all cells completed. It did not prevent output saving;
-there are no notebook error outputs.
+| Observation | Qwen3.5 9B baseline, `22d0a021ed` | Llama 3.2, `3738399430` |
+|---|---|---|
+| Notebook execution | 80/80 cells | 80/80 cells; one handled tool-validation error remained visible in the trace |
+| Compatible API and structured output | Passed | Passed |
+| Bare LLM with both notes | 120 approved, PO-1048, not submitted | Same core facts |
+| Fresh transient agent without case notes | Answered unknown | Invented 12 units and an approval reference of SOP-102 |
+| Extraction checkpoints | Three proposal and two approval candidates | Two candidates per step; both processing checks passed |
+| Extracted facts | Retained the proposal quantity and explicit no-order statement | Omitted the proposal quantity and explicit no-order statement from the candidate memories |
+| Compact summary | Retained 80 proposed, 120 approved and no order submitted | Retained the two quantities, but omitted the explicit no-order statement |
+| Reviewed history and fresh-session Oracle recall | Correct current fact and historical proposal | Same; the agent recalled 120 approved under PO-1048, not submitted |
+| Memory-aware tool use | No error observations | Sent an invalid `report_reference` argument to `inspect_stock_report`; validation rejected it, and later recall still produced the correct answer |
+| Procedure vector retrieval | Expected procedure in the top three for all three questions | Same; embedding model and database retrieval were unchanged |
+| LLM pruning | Expected procedure retained in the top three | Same |
+| Full handover | Core facts correct, cited IDs present in supplied evidence; 85 whitespace-separated words | Core facts correct, but one cited UUID was altered and the draft exceeded the under-120-word instruction (129 whitespace-separated words) |
+| Reusable procedure | Recalled the reviewed checklist | Recalled it, but added extra workflow suggestions that are not approved policy |
+| Human approval and cleanup | Unapproved write blocked; save declined; both case threads cleared | Same |
 
-Earlier separate seed-cell checks replayed the reported duplicate-ID run twice
-with zero inserts and unchanged records. A temporary partial seed with one existing procedure
-added exactly three missing procedures; another replay added none. Only those
-temporary check records were removed afterward; existing learner records stayed intact.
+The Llama handover cited `9f089e83-eaf1-4077-a200-e12f6d6b6cb7`, whereas
+the supplied source-message ID was `9f089e83-eaf1-4077-a200-e12f6a5b6cb7`.
+The raw output is intentionally preserved. Correct business facts alone do not
+make a citation or tool call valid. The explicit reviewed fact and source
+messages remain essential when extraction or compaction omits information.
 
-This execution used Python 3.13, LiteLLM 1.104.0 and the corrected provider-body
-setting. It used Qwen3.5 9B through Ollama 0.40.0, OAMP 26.8.0,
-Oracle AI Database Free 23.26.2.0.0 and `AGENT.ALL_MINILM_L12_V2` for
-in-database embeddings. The model digest was
+The unattended run declined the optional handover save, so its approved-write
+branch was not exercised. Both run-specific threads ended with zero thread,
+message, memory and chunk rows; shared procedures retain their existing TTL.
+The local runner emitted a macOS process-inspection permission warning during
+kernel shutdown after all cells completed. Outputs were saved successfully,
+with no notebook error outputs.
+
+Both runs used Python 3.13, LiteLLM 1.104.0, Ollama 0.40.0, OAMP 26.8.0,
+Oracle AI Database Free 23.26.2.0.0 and `AGENT.ALL_MINILM_L12_V2` embeddings.
+The local `llama3.2:latest` is a 3.2B-parameter Q4_K_M model, loaded with an
+8,192-token context. Its digest is
+`a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72`.
+The Qwen baseline digest was
 `d63f830f28d515fefea546f213fca7a75e9dd5176ef51a6deabc952d1c99a911`.
+The baseline outputs remain in Git history at commit `1cac500`.
 
-| Saved observation | Result |
-|---|---|
-| Compatible API and structured output | Both succeeded from the fresh kernel |
-| Memory aware agent and fresh-session recall | Both answered 120 approved under PO-1048, no supplier order submitted |
-| Per-ingestion extraction checkpoints | Persisted three proposal candidates and two approval candidates with distinct capture IDs; both checks passed without reported SDK failures |
-| Extraction and summary | Captured 80 proposed versus 120 approved, with no order submitted; the automatically extracted old proposal was invalid in this run, while the explicit reviewed pair independently demonstrates supersession |
-| Linked history table | Displayed the valid 120-unit approval, its supersedes relationship and the invalid historical 80-unit proposal |
-| Procedure vector search | The expected procedure appeared in the first three results for all three sample questions |
-| Full handover draft | Preserved 120 approved under PO-1048 and no order submitted; left the action owner unconfirmed and identified missing stock level, supplier ETA and submission timing |
-| Bare model and transient agent without case evidence | Both answered unknown rather than inventing the quantity, approval request or order status |
-| Human approval gate | Blocked the unapproved write and declined the optional save; the approved branch was not exercised |
-| Procedural recall | Returned the reviewed checklist in the later session without copying PO-1048 |
-| Cleanup | Both current run threads had zero remaining thread, message, memory and chunk rows |
-
-These are observations from one run, not guarantees of model accuracy or
-production retrieval quality. The notebooks retain the actual answers for
-inspection, including mistakes, rather than replacing them with idealized text.
+Focused ingestion-guard checks also passed after the model change: timeouts,
+logged background errors and empty current-ingestion results cannot be masked
+by older memories. Earlier checks separately exercised real SDK provider failure
+and repeat-safe procedure seeding; those were not repeated as part of this model
+comparison. Generated candidates and fluent answers still require review.
 
 ## References
 
@@ -239,4 +252,5 @@ inspection, including mistakes, rather than replacing them with idealized text.
 - [OAMP model interfaces](https://docs.oracle.com/en/database/oracle/agent-memory/26.8/guide/api/models.html)
 - [LangChain agent factory](https://reference.langchain.com/python/langchain/agents/factory/create_agent)
 - [Ollama documentation](https://docs.ollama.com/)
+- [Ollama Llama 3.2 model](https://ollama.com/library/llama3.2)
 - [Ollama compatible API](https://docs.ollama.com/api/openai-compatibility)

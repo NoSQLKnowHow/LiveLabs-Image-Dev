@@ -50,7 +50,7 @@
 <rect x="885" y="140" width="280" height="112" rx="12" fill="#eee8fa" stroke="#9380b5"/>
 <use href="#chip" x="904" y="157" color="#776191"/>
 <text x="953" y="182" font-size="22" font-weight="700">Ollama + LLM</text>
-<text x="905" y="216" font-size="16">Local Qwen3.5 9B inference</text>
+<text x="905" y="216" font-size="16">Local Llama 3.2 3B inference</text>
 <text x="905" y="239" font-size="15">Generate, extract, summarize, prune</text>
 <rect x="335" y="295" width="420" height="117" rx="12" fill="#fff3db" stroke="#c39942"/>
 <use href="#chat" x="355" y="313" color="#a07629"/>
